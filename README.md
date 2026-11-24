@@ -54,11 +54,28 @@ Cuaderno de rimas para Android: escribe frases sueltas, recibe sugerencias de ri
 | Bases | API de Jamendo / FMA + subida local |
 | Arquitectura | MVVM + Hilt, modular (`:notebook`, `:rhymes`, `:beats`, `:recorder`) |
 
-## Identidad visual (ideas)
-- Estética de **libreta**: fondo de papel/rayado en claro, grafito oscuro en modo noche.
-- Color de acento extraído del logo; tipografía mono o manuscrita para la letra y sans geométrica para la UI.
-- Rimas resaltadas con colores tipo marcador fluorescente.
-- Icono adaptativo de Android a partir del logo (versión monocroma para Android 13+).
+## Identidad visual
+
+![Logo](docs/brand/logo.jpg)
+
+**Lema:** *Antes del beat, nace la idea.*
+
+El símbolo es un **0** atravesado por una línea vertical (barra de compás / cursor / micrófono) con un **punto rojo** (REC). Resume la app: hoja en blanco + ritmo + grabar.
+
+| Token | Color | Uso |
+|---|---|---|
+| Negro tinta | `#0E0E0E` | Fondo principal (modo oscuro por defecto) |
+| Blanco tiza | `#F5F5F5` | Texto, trazos, iconos |
+| Rojo REC | `#E5194B` | Grabar, acentos, rima activa (usar poco) |
+| Gris grafito | `#2A2A2A` / `#8A8A8A` | Tarjetas, texto secundario |
+
+- **Tipografías:** grafiti solo para el logo y títulos grandes; *Inter/Roboto* en la UI; mono (*JetBrains Mono*) para las letras, para alinear sílabas.
+- **El punto rojo es el botón de grabar** en toda la app; parpadea mientras graba.
+- **La línea vertical** marca el pulso: en el editor puede moverse al tempo de la base como metrónomo visual.
+- Rimas resaltadas con subrayados tipo spray (blanco, rojo y variaciones de gris/rosa).
+- Salpicaduras de spray en estados vacíos ("Tu primera barra empieza aquí").
+- **Icono Android:** solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
+- **Splash:** el 0 aparece, la línea cae como un beat y el punto rojo se enciende.
 
 ## Hoja de ruta
 1. **v0.1** – Cuaderno + barras sueltas + contador de sílabas.

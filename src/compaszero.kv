@@ -105,6 +105,9 @@
             radius: [dp(17)]
 
 <LyricInput@TextInput>:
+    # teclado nativo de Android con autocorrector y sugerencias
+    input_type: "text"
+    keyboard_suggestions: True
     font_name: MONO
     font_size: "16sp"
     background_color: C.ink
@@ -116,16 +119,45 @@
 <Composer>:
     orientation: "vertical"
     size_hint_y: None
-    height: dp(92)
+    height: self.minimum_height
     padding: dp(8)
-    spacing: dp(2)
+    spacing: dp(4)
     canvas.before:
         Color:
             rgba: C.graphite
         Rectangle:
             pos: self.pos
             size: self.size
+    StackLayout:
+        id: kinds
+        size_hint_y: None
+        height: self.minimum_height
+        spacing: dp(6)
     BoxLayout:
+        id: rhyme_box
+        orientation: "vertical"
+        size_hint_y: None
+        height: 0
+        opacity: 0
+        Label:
+            id: rhyme_title
+            font_size: "12sp"
+            color: C.muted
+            size_hint_y: None
+            height: dp(18)
+            text_size: self.size
+            halign: "left"
+        ScrollView:
+            do_scroll_y: False
+            bar_width: 0
+            BoxLayout:
+                id: rhymes
+                size_hint_x: None
+                width: self.minimum_width
+                spacing: dp(6)
+    BoxLayout:
+        size_hint_y: None
+        height: dp(52)
         spacing: dp(8)
         LyricInput:
             id: field
@@ -133,7 +165,7 @@
             multiline: False
             write_tab: False
             text_validate_unfocus: False
-            on_text: root.update_count(self.text)
+            on_text: root.on_field(self.text)
             on_text_validate: root.submit()
         RecButton:
             text: "+"
@@ -150,6 +182,19 @@
         text_size: self.size
         halign: "left"
 
+<RhymeWord@ButtonBehavior+Label>:
+    size_hint_x: None
+    width: self.texture_size[0] + dp(20)
+    font_name: MONO
+    font_size: "14sp"
+    canvas.before:
+        Color:
+            rgba: C.graphite2 if self.state == "normal" else C.rec
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(8)]
+
 <TopBar@BoxLayout>:
     size_hint_y: None
     height: dp(56)
@@ -160,3 +205,18 @@
         Rectangle:
             pos: self.pos
             size: self.size
+
+<RecDot>:
+    size_hint: None, None
+    size: dp(96), dp(96)
+    canvas:
+        Color:
+            rgba: C.chalk
+        Line:
+            ellipse: self.x + dp(3), self.y + dp(3), self.width - dp(6), self.height - dp(6)
+            width: dp(3)
+        Color:
+            rgba: self.dot
+        Ellipse:
+            pos: self.center_x - dp(22), self.center_y - dp(22)
+            size: dp(44), dp(44)

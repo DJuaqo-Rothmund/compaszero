@@ -16,6 +16,23 @@ class Song:
 
 
 @dataclass
+class Session:
+    id: int
+    beat: str
+    created_at: float
+    duration: float
+    lines: int = 0
+
+
+@dataclass
+class Line:
+    id: int
+    session_id: int
+    t: float  # segundos desde que empezó la base
+    text: str
+
+
+@dataclass
 class Bar:
     id: int
     song_id: int | None  # None = idea suelta
@@ -42,6 +59,13 @@ class Notebook:
                 song_id INTEGER REFERENCES song(id) ON DELETE CASCADE,
                 section TEXT NOT NULL DEFAULT '', text TEXT NOT NULL, created_at REAL NOT NULL);
             CREATE INDEX IF NOT EXISTS bar_song ON bar(song_id);
+            CREATE TABLE IF NOT EXISTS freestyle (
+                id INTEGER PRIMARY KEY, beat TEXT NOT NULL, created_at REAL NOT NULL,
+                duration REAL NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS freestyle_line (
+                id INTEGER PRIMARY KEY,
+                session_id INTEGER NOT NULL REFERENCES freestyle(id) ON DELETE CASCADE,
+                t REAL NOT NULL, text TEXT NOT NULL);
         """)
 
     # canciones
@@ -105,3 +129,45 @@ class Notebook:
     def _touch(self, song_id: int | None):
         if song_id is not None:
             self.conn.execute("UPDATE song SET updated_at = ? WHERE id = ?", (time.time(), song_id))
+
+    # freestyle
+    def start_session(self, beat: str) -> int:
+        with self.conn:
+            return self.conn.execute("INSERT INTO freestyle (beat, created_at) VALUES (?, ?)",
+                                     (beat, time.time())).lastrowid
+
+    def end_session(self, session_id: int, duration: float):
+        with self.conn:
+            self.conn.execute("UPDATE freestyle SET duration = ? WHERE id = ?", (duration, session_id))
+
+    def add_line(self, session_id: int, t: float, text: str) -> int:
+        with self.conn:
+            return self.conn.execute("INSERT INTO freestyle_line (session_id, t, text) VALUES (?, ?, ?)",
+                                     (session_id, t, text.strip())).lastrowid
+
+    def sessions(self) -> list[Session]:
+        rows = self.conn.execute("""
+            SELECT f.id, f.beat, f.created_at, f.duration, COUNT(l.id) FROM freestyle f
+            LEFT JOIN freestyle_line l ON l.session_id = f.id GROUP BY f.id ORDER BY f.created_at DESC""")
+        return [Session(*r) for r in rows]
+
+    def session(self, session_id: int) -> Session | None:
+        r = self.conn.execute("SELECT id, beat, created_at, duration FROM freestyle WHERE id = ?",
+                              (session_id,)).fetchone()
+        return Session(*r) if r else None
+
+    def lines(self, session_id: int) -> list[Line]:
+        rows = self.conn.execute("SELECT * FROM freestyle_line WHERE session_id = ? ORDER BY t, id", (session_id,))
+        return [Line(*r) for r in rows]
+
+    def update_line(self, line_id: int, text: str):
+        with self.conn:
+            self.conn.execute("UPDATE freestyle_line SET text = ? WHERE id = ?", (text.strip(), line_id))
+
+    def delete_line(self, line_id: int):
+        with self.conn:
+            self.conn.execute("DELETE FROM freestyle_line WHERE id = ?", (line_id,))
+
+    def delete_session(self, session_id: int):
+        with self.conn:
+            self.conn.execute("DELETE FROM freestyle WHERE id = ?", (session_id,))

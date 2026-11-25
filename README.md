@@ -77,17 +77,20 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 - **Icono Android:** `src/assets/icon.png`; solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
 - **Splash:** el 0 aparece, la línea cae como un beat y el punto rojo se enciende.
 
-## Estado actual (v0.1)
+## Estado actual (v0.2)
 - Intro animada: símbolo con luz REC que late (rojo → casi apagado), grafiti "pintado en vivo" con spray, líneas y lema. Fuente: `docs/brand/intro.svg` (generado con `tools/build_intro.py`); la app reproduce los cuadros de `src/assets/intro.zip`.
 - Cuaderno: canciones con secciones (Intro, Verso, Coro, Puente, Outro) y banco de **ideas sueltas** con escritura rápida (Enter guarda y deja listo para la siguiente).
-- Mover ideas a una canción, editar y borrar barras.
-- Contador de sílabas en vivo por barra (con tests).
+- **Teclado nativo de Android** con autocorrector y sugerencias en todos los campos de letra.
+- **Modo rimas**: eliges el tipo (consonante, asonante o multisilábica) y sugiere palabras que riman con la última palabra escrita, o con el final de la barra anterior si el campo está vacío. Tocar una sugerencia la agrega. Motor en `src/cz/rhymes.py`, ~59.000 palabras en `src/assets/rimas_es.tsv`.
+- **Freestyle**: eliges una base (dos incluidas, o importas la tuya), tocas el punto rojo y la app transcribe lo que rapeas con el reconocedor de voz de Android, marcando el segundo de cada línea. Después revisas, corriges y mandas las líneas a Ideas o a una canción nueva.
+- Contador de sílabas en vivo por barra.
 
 ### Probar en el PC
 ```bash
 pip install "kivy[base]==2.3.1" pytest
 python src/main.py
 python -m pytest tests
+CZ_FAKE_SPEECH=1 python src/main.py   # simula el dictado del freestyle en el PC
 ```
 
 ### Generar el APK
@@ -102,3 +105,7 @@ buildozer android debug     # APK en bin/
 3. **v0.3** – Reproductor de bases + catálogo libre.
 4. **v0.4** – Grabación sobre base + teleprompter.
 5. **v1.0** – Backup, freestyle, pulido visual y Play Store.
+
+## Créditos de datos
+- Lista de palabras: [wordfreq](https://github.com/rspeer/wordfreq) (CC BY-SA 4.0), regenerable con `tools/build_wordlist.py`.
+- Bases incluidas: sintetizadas con `tools/make_beats.py`, originales y libres de derechos.

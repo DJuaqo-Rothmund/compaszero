@@ -77,13 +77,35 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 - **Icono Android:** `src/assets/icon.png`; solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
 - **Splash:** el 0 aparece, la línea cae como un beat y el punto rojo se enciende.
 
-## Estado actual (v0.2)
-- Intro animada: símbolo con luz REC que late (rojo → casi apagado), grafiti "pintado en vivo" con spray, líneas y lema. Fuente: `docs/brand/intro.svg` (generado con `tools/build_intro.py`); la app reproduce los cuadros de `src/assets/intro.zip`.
-- Cuaderno: canciones con secciones (Intro, Verso, Coro, Puente, Outro) y banco de **ideas sueltas** con escritura rápida (Enter guarda y deja listo para la siguiente).
-- **Teclado nativo de Android** con autocorrector y sugerencias en todos los campos de letra.
-- **Modo rimas**: eliges el tipo (consonante, asonante o multisilábica) y sugiere palabras que riman con la última palabra escrita, o con el final de la barra anterior si el campo está vacío. Tocar una sugerencia la agrega. Motor en `src/cz/rhymes.py`, ~59.000 palabras en `src/assets/rimas_es.tsv`.
-- **Freestyle**: eliges una base (dos incluidas, o importas la tuya), tocas el punto rojo y la app transcribe lo que rapeas con el reconocedor de voz de Android, marcando el segundo de cada línea. Después revisas, corriges y mandas las líneas a Ideas o a una canción nueva.
-- Contador de sílabas en vivo por barra.
+## Estado actual (v0.3)
+
+**Escribir**
+- Teclado nativo de Android con autocorrector y sugerencias.
+- Modo rimas: consonante, asonante o multisilábica, con la última palabra escrita o con el final de la barra anterior.
+- Colores de rima: los finales de barra que riman entre sí se pintan del mismo color.
+- Ortografía: palabras dudosas subrayadas (sobre todo tildes), sugerencias y diccionario personal.
+- Sinónimos: toca una palabra al editar una barra (tesauro OpenThesaurus-es, LGPL).
+- Sílabas normales y "al rapear" (con sinalefa).
+- Dictar una barra con la voz (botón "Voz").
+
+**Bases y ritmo**
+- 4 bases incluidas (boom bap 90, lo-fi 80, trap 140, drill 142) + importar las tuyas.
+- Base vinculada a cada canción, en loop mientras escribes, con metrónomo visual (tiempo 1 en rojo).
+- BPM por canción y compases por sección (≈ duración).
+
+**Grabar**
+- Teleprompter: suena la base, cuenta de un compás, la letra avanza una barra por compás y se graba la toma.
+- Tomas por canción (tocar = escuchar, mantener = borrar) y notas de voz en Ideas.
+- Freestyle con transcripción y palabras al azar cada 8 compases.
+
+**Inspiración y organización**
+- Reto del día (tema + palabra obligatoria) y racha de días escribiendo.
+- Estados (Idea, En progreso, Lista, Grabada), #etiquetas y buscador en títulos, letras y etiquetas.
+- Historial de versiones (se guarda al salir de la canción si cambió) con restaurar.
+
+**Compartir y respaldo**
+- Compartir la letra (WhatsApp, notas, mail…).
+- Copia de seguridad del cuaderno en JSON, guardada donde elijas (Google Drive, Descargas…), y restaurar.
 
 ### Probar en el PC
 ```bash
@@ -107,5 +129,6 @@ buildozer android debug     # APK en bin/
 5. **v1.0** – Backup, freestyle, pulido visual y Play Store.
 
 ## Créditos de datos
+- Sinónimos: [OpenThesaurus-es](https://github.com/LibreOffice/dictionaries/tree/master/es) (LGPL 2.1), regenerable con `tools/build_thesaurus.py`.
 - Lista de palabras: [wordfreq](https://github.com/rspeer/wordfreq) (CC BY-SA 4.0), regenerable con `tools/build_wordlist.py`.
 - Bases incluidas: sintetizadas con `tools/make_beats.py`, originales y libres de derechos.

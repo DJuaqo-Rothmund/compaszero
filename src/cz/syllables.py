@@ -50,3 +50,23 @@ def count_word(raw: str) -> int:
         else:
             prev = None
     return max(count, 1)
+
+
+_VOWEL_END = set("aeiouáéíóúy")
+_VOWEL_START = set("aeiouáéíóú")
+
+
+def _starts_with_vowel(w: str) -> bool:
+    w = w[1:] if w.startswith("h") else w
+    return bool(w) and w[0] in _VOWEL_START
+
+
+def count_line_sung(line: str) -> int:
+    """Sílabas como suenan al rapear: aplica sinalefa (vocal final + vocal inicial se unen).
+    "nace la idea" = na-ce-laI-de-a (5) en vez de 6."""
+    ws = words(line)
+    total = sum(count_word(w) for w in ws)
+    for a, b in zip(ws, ws[1:]):
+        if a[-1] in _VOWEL_END and _starts_with_vowel(b):
+            total -= 1
+    return total

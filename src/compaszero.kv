@@ -55,6 +55,7 @@
     Label:
         id: lyric
         text: root.text
+        markup: True
         font_name: MONO
         font_size: "15sp"
         text_size: self.width, None
@@ -167,6 +168,13 @@
             text_validate_unfocus: False
             on_text: root.on_field(self.text)
             on_text_validate: root.submit()
+        FlatButton:
+            text: "Voz" if not root.listening else "..."
+            color: C.rec if root.listening else C.muted
+            font_size: "14sp"
+            size_hint_x: None
+            width: dp(44)
+            on_release: root.dictate()
         RecButton:
             text: "+"
             font_size: "24sp"

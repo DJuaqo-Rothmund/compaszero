@@ -99,6 +99,50 @@ def trap():
     return buf[: int(SR * beat * 4 * bars)]
 
 
+def lofi():
+    bpm, bars = 80, 8
+    beat = 60 / bpm
+    buf = np.zeros(int(SR * beat * 4 * bars) + SR)
+    chords = [[62, 65, 69, 72], [55, 59, 62, 65], [60, 64, 67, 71], [57, 60, 64, 67]]  # Dm9 G7 Cmaj7 Am7
+    crackle = rng.uniform(-1, 1, len(buf)) * (rng.uniform(0, 1, len(buf)) > 0.9995) * 0.3
+    buf += crackle
+    for b in range(bars):
+        t0 = b * 4 * beat
+        for k in (0, 2.5):
+            place(buf, kick() * .8, t0 + k * beat)
+        for k in (1, 3):
+            place(buf, snare() * .6, t0 + k * beat + 0.02)
+        for k in range(8):
+            place(buf, hat() * .7, t0 + k * beat / 2 + (0.05 if k % 2 else 0))
+        for m in chords[b % 4]:
+            place(buf, tone(note(m), beat * 4, decay=2.0, harmonics=(1, .2), vol=.06), t0 + 0.01)
+        place(buf, tone(note(chords[b % 4][0] - 24), beat * 2, decay=.6, harmonics=(1, .2), vol=.3), t0)
+    return buf[: int(SR * beat * 4 * bars)]
+
+
+def drill():
+    bpm, bars = 142, 8
+    beat = 60 / bpm
+    buf = np.zeros(int(SR * beat * 4 * bars) + SR)
+    slide = [44, 44, 47, 42]
+    for b in range(bars):
+        t0 = b * 4 * beat
+        for k in (1, 3.25) if b % 2 else (1.0, 3.0):
+            place(buf, snare(), t0 + k * beat)
+        for k in (0, 1.75, 2.5):
+            place(buf, kick(0.25), t0 + k * beat)
+        for k in (0, .75, 1.5, 2, 2.75, 3.25, 3.5):
+            place(buf, hat(), t0 + k * beat)
+        r = slide[(b // 2) % 4]
+        place(buf, tone(note(r - 12), beat * 1.5, decay=.8, harmonics=(1, .25), vol=.5), t0)
+        place(buf, tone(note(r - 10), beat * 1.2, decay=.6, harmonics=(1, .25), vol=.45), t0 + 2.5 * beat)
+        for i, m in enumerate([r + 24, r + 23, r + 19]):
+            place(buf, tone(note(m), beat * .7, decay=.3, harmonics=(1, .5), vol=.05), t0 + (i * 1.33) * beat)
+    return buf[: int(SR * beat * 4 * bars)]
+
+
 OUT.mkdir(parents=True, exist_ok=True)
+save("Lo-fi 80 BPM.wav", lofi())
+save("Drill 142 BPM.wav", drill())
 save("Boom bap 90 BPM.wav", boom_bap())
 save("Trap 140 BPM.wav", trap())

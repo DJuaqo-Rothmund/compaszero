@@ -43,16 +43,15 @@ Cuaderno de rimas para Android: escribe frases sueltas, recibe sugerencias de ri
 - Modo oscuro por defecto, tipografía grande y legible.
 - Copia de seguridad en Google Drive.
 
-## Stack propuesto
+## Stack
 | Capa | Tecnología |
 |---|---|
-| Lenguaje / UI | Kotlin + Jetpack Compose (Material 3) |
-| Datos locales | Room (SQLite) |
-| Audio | Media3 ExoPlayer (bases) + MediaRecorder/AudioRecord (voz) |
-| Rimas | Motor propio de silabeo/fonética en español + diccionario offline |
-| Ortografía | Hunspell (es) |
-| Bases | API de Jamendo / FMA + subida local |
-| Arquitectura | MVVM + Hilt, modular (`:notebook`, `:rhymes`, `:beats`, `:recorder`) |
+| Lenguaje | Python 3 |
+| UI | Kivy 2.3 (`src/main.py` + `src/compaszero.kv`) |
+| Empaquetado Android | Buildozer / python-for-android (`buildozer.spec`) |
+| Datos locales | SQLite (`src/cz/db.py`) |
+| Sílabas / rimas | Motor propio en español (`src/cz/syllables.py`) |
+| Audio (próximo) | `kivy.core.audio` + `android.media` vía pyjnius |
 
 ## Identidad visual
 
@@ -75,22 +74,27 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 - **La línea vertical** marca el pulso: en el editor puede moverse al tempo de la base como metrónomo visual.
 - Rimas resaltadas con subrayados tipo spray (blanco, rojo y variaciones de gris/rosa).
 - Salpicaduras de spray en estados vacíos ("Tu primera barra empieza aquí").
-- **Icono Android:** solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
+- **Icono Android:** `src/assets/icon.png`; solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
 - **Splash:** el 0 aparece, la línea cae como un beat y el punto rojo se enciende.
 
 ## Estado actual (v0.1)
-- Intro animada: símbolo con luz REC que late (rojo → casi apagado), grafiti "pintado en vivo" con spray, líneas y lema (`ui/Intro.kt`; vista previa web en `docs/brand/intro.svg`).
+- Intro animada: símbolo con luz REC que late (rojo → casi apagado), grafiti "pintado en vivo" con spray, líneas y lema. Fuente: `docs/brand/intro.svg` (generado con `tools/build_intro.py`); la app reproduce los cuadros de `src/assets/intro.zip`.
 - Cuaderno: canciones con secciones (Intro, Verso, Coro, Puente, Outro) y banco de **ideas sueltas** con escritura rápida (Enter guarda y deja listo para la siguiente).
 - Mover ideas a una canción, editar y borrar barras.
-- Contador de sílabas en vivo por barra (`text/Syllables.kt`, con tests).
-- Icono adaptativo (+ monocromo) a partir del símbolo.
+- Contador de sílabas en vivo por barra (con tests).
 
-### Compilar
+### Probar en el PC
 ```bash
-./gradlew assembleDebug        # APK en app/build/outputs/apk/debug/
-./gradlew testDebugUnitTest
+pip install "kivy[base]==2.3.1" pytest
+python src/main.py
+python -m pytest tests
 ```
-Requiere Android SDK 35 (`local.properties` con `sdk.dir=...`) y JDK 17+.
+
+### Generar el APK
+```bash
+pip install buildozer
+buildozer android debug     # APK en bin/
+```
 
 ## Hoja de ruta
 1. **v0.1** – Cuaderno + barras sueltas + contador de sílabas.

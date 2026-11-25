@@ -1,0 +1,162 @@
+#:import C cz.theme.C
+#:import MONO cz.theme.MONO
+
+<Label>:
+    color: C.chalk
+
+<Surface@BoxLayout>:
+    canvas.before:
+        Color:
+            rgba: C.graphite
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+
+<Card>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(72)
+    padding: dp(16), dp(12)
+    canvas.before:
+        Color:
+            rgba: C.graphite
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+    Label:
+        text: root.title
+        font_size: "17sp"
+        bold: True
+        text_size: self.size
+        halign: "left"
+        valign: "middle"
+    Label:
+        text: root.subtitle
+        font_size: "13sp"
+        color: C.muted
+        text_size: self.size
+        halign: "left"
+        valign: "middle"
+
+<BarRow>:
+    size_hint_y: None
+    height: max(dp(48), lyric.texture_size[1] + dp(24))
+    padding: dp(12), dp(8)
+    spacing: dp(8)
+    canvas.before:
+        Color:
+            rgba: C.graphite
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(8)]
+    Label:
+        id: lyric
+        text: root.text
+        font_name: MONO
+        font_size: "15sp"
+        text_size: self.width, None
+        halign: "left"
+        valign: "middle"
+    Label:
+        text: str(root.syllables)
+        font_name: MONO
+        font_size: "12sp"
+        color: C.muted
+        size_hint: None, None
+        size: dp(34), dp(22)
+        pos_hint: {"center_y": .5}
+        canvas.before:
+            Color:
+                rgba: C.graphite2
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(11)]
+
+<FlatButton@ButtonBehavior+Label>:
+    color: C.chalk
+    font_size: "15sp"
+
+<RecButton@ButtonBehavior+Label>:
+    color: C.chalk
+    bold: True
+    canvas.before:
+        Color:
+            rgba: C.rec if self.state == "normal" else C.rec_off
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+
+<Chip@ToggleButtonBehavior+Label>:
+    size_hint: None, None
+    size: self.texture_size[0] + dp(24), dp(34)
+    font_size: "14sp"
+    allow_no_selection: False
+    canvas.before:
+        Color:
+            rgba: C.rec if self.state == "down" else C.graphite2
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(17)]
+
+<LyricInput@TextInput>:
+    font_name: MONO
+    font_size: "16sp"
+    background_color: C.ink
+    foreground_color: C.chalk
+    cursor_color: C.rec
+    hint_text_color: C.muted
+    padding: dp(12), dp(12)
+
+<Composer>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(92)
+    padding: dp(8)
+    spacing: dp(2)
+    canvas.before:
+        Color:
+            rgba: C.graphite
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    BoxLayout:
+        spacing: dp(8)
+        LyricInput:
+            id: field
+            hint_text: root.hint
+            multiline: False
+            write_tab: False
+            text_validate_unfocus: False
+            on_text: root.update_count(self.text)
+            on_text_validate: root.submit()
+        RecButton:
+            text: "+"
+            font_size: "24sp"
+            size_hint_x: None
+            width: dp(52)
+            on_release: root.submit()
+    Label:
+        text: root.count
+        font_size: "12sp"
+        color: C.muted
+        size_hint_y: None
+        height: dp(16)
+        text_size: self.size
+        halign: "left"
+
+<TopBar@BoxLayout>:
+    size_hint_y: None
+    height: dp(56)
+    padding: dp(8), 0
+    canvas.before:
+        Color:
+            rgba: C.ink
+        Rectangle:
+            pos: self.pos
+            size: self.size

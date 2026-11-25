@@ -8,10 +8,10 @@
       }
 
       .cls-2 {
-        fill: red;
+        fill: #E5194B;
       }
       .cls-2 { animation: rec 1.6s ease-in-out infinite; }
-      .glow { fill: red; filter: url(#g); animation: halo 1.6s ease-in-out infinite; }
+      .glow { fill: #E5194B; filter: url(#g); animation: halo 1.6s ease-in-out infinite; }
       @keyframes rec { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
       @keyframes halo { 0%,100% { opacity: .9 } 50% { opacity: 0 } }
       @media (prefers-reduced-motion: reduce) { .cls-2, .glow { animation: none } }

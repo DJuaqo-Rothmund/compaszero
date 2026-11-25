@@ -78,6 +78,20 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 - **Icono Android:** solo el 0 con punto rojo sobre negro; versión monocroma para Android 13+. El texto grafiti no se lee en tamaño icono.
 - **Splash:** el 0 aparece, la línea cae como un beat y el punto rojo se enciende.
 
+## Estado actual (v0.1)
+- Intro animada: símbolo con luz REC que late (rojo → casi apagado), grafiti "pintado en vivo" con spray, líneas y lema (`ui/Intro.kt`; vista previa web en `docs/brand/intro.svg`).
+- Cuaderno: canciones con secciones (Intro, Verso, Coro, Puente, Outro) y banco de **ideas sueltas** con escritura rápida (Enter guarda y deja listo para la siguiente).
+- Mover ideas a una canción, editar y borrar barras.
+- Contador de sílabas en vivo por barra (`text/Syllables.kt`, con tests).
+- Icono adaptativo (+ monocromo) a partir del símbolo.
+
+### Compilar
+```bash
+./gradlew assembleDebug        # APK en app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest
+```
+Requiere Android SDK 35 (`local.properties` con `sdk.dir=...`) y JDK 17+.
+
 ## Hoja de ruta
 1. **v0.1** – Cuaderno + barras sueltas + contador de sílabas.
 2. **v0.2** – Motor de rimas + ortografía.

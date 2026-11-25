@@ -71,7 +71,7 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 
 - **Tipografías:** grafiti solo para el logo y títulos grandes; *Inter/Roboto* en la UI; mono (*JetBrains Mono*) para las letras, para alinear sílabas.
 - **El punto rojo es el botón de grabar** en toda la app; parpadea mientras graba.
-- Archivos: `docs/brand/logo.svg` (logo completo) y `docs/brand/icon.svg` (símbolo), vectoriales; el punto rojo late (100% → 40%) con halo.
+- Archivos: `docs/brand/logo.svg` (logo completo) y `docs/brand/icon.svg` (símbolo), basados en el vector original `docs/brand/source-illustrator.svg`; el punto rojo late (100% → 40%) con halo.
 - **La línea vertical** marca el pulso: en el editor puede moverse al tempo de la base como metrónomo visual.
 - Rimas resaltadas con subrayados tipo spray (blanco, rojo y variaciones de gris/rosa).
 - Salpicaduras de spray en estados vacíos ("Tu primera barra empieza aquí").

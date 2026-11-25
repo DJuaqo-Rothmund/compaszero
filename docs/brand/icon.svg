@@ -1,4 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="574 400 900 900"><title>CompásZero</title><defs><filter id="g" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="22"/></filter></defs>
-<style>.rec{animation:p 1.6s ease-in-out infinite}.glow{animation:q 1.6s ease-in-out infinite}@keyframes p{0%,100%{opacity:1}50%{opacity:.4}}@keyframes q{0%,100%{opacity:.9}50%{opacity:0}}@media (prefers-reduced-motion:reduce){.rec,.glow{animation:none}}</style>
-<rect x="574" y="400" width="900" height="900" fill="#0E0E0E"/><g transform="translate(0 185)"><g fill="none" stroke="#FFF" stroke-linecap="round"><rect x="846" y="392" width="357" height="545" rx="178.5" stroke-width="32"/><path d="M1024 292V578M1024 746V1004" stroke-width="10"/></g>
-<circle class="glow" cx="1024" cy="663" r="51" fill="#E5194B" filter="url(#g)"/><circle class="rec" cx="1024" cy="663" r="51" fill="#E5194B"/></g></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="143.22 53.21 200 200">
+  <title>CompásZero</title>
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+      }
+
+      .cls-2 {
+        fill: red;
+      }
+      .cls-2 { animation: rec 1.6s ease-in-out infinite; }
+      .glow { fill: red; filter: url(#g); animation: halo 1.6s ease-in-out infinite; }
+      @keyframes rec { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
+      @keyframes halo { 0%,100% { opacity: .9 } 50% { opacity: 0 } }
+      @media (prefers-reduced-motion: reduce) { .cls-2, .glow { animation: none } }
+    </style>
+    <filter id="g" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <rect x="143.22" y="53.21" width="200" height="200"/>
+  <path class="cls-1" d="M241.68,218.93v19.73c0,.83.67,1.5,1.5,1.5s1.5-.67,1.5-1.5v-19.73c24.32-.72,43.79-19.29,43.79-42.12v-47.2c0-22.82-19.48-41.4-43.79-42.12v-19.52c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5,1.5v19.53c-24.28.76-43.72,19.32-43.72,42.11v47.2c0,22.8,19.44,41.36,43.72,42.12ZM205.32,131.99c0-20.41,16.14-37.05,36.36-37.86v39.78c0,.83.67,1.5,1.5,1.5s1.5-.67,1.5-1.5v-39.78c20.25.77,36.43,17.42,36.43,37.86v42.44c0,20.44-16.18,37.09-36.43,37.86v-39.74c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5,1.5v39.74c-20.22-.81-36.36-17.44-36.36-37.86v-42.44Z"/>
+  <circle class="glow" cx="243.22" cy="153.21" r="11.89"/>
+  <circle class="cls-2" cx="243.22" cy="153.21" r="11.89"/>
+</svg>

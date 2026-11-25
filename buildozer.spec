@@ -5,7 +5,7 @@ package.domain = com.compaszero
 source.dir = src
 source.include_exts = py,kv,png,jpg,zip,ttf,tsv,wav
 version = 0.1.0
-requirements = python3,kivy==2.3.1,pyjnius,plyer,android,charset-normalizer==3.3.2
+requirements = python3,kivy==2.3.1,pyjnius,plyer,android
 orientation = portrait
 fullscreen = 0
 icon.filename = %(source.dir)s/assets/icon.png

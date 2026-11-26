@@ -16,7 +16,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.modalview import ModalView
-from kivy.uix.screenmanager import FadeTransition, Screen, ScreenManager
+from kivy.uix.screenmanager import NoTransition, Screen, ScreenManager
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.stacklayout import StackLayout
 from kivy.factory import Factory
@@ -417,7 +417,7 @@ class HomeScreen(Screen):
         self.clear_widgets()
         root = BoxLayout(orientation="vertical")
         top = Factory.TopBar()
-        gear = Factory.FlatButton(text="Ajustes", color=C.muted, font_size="13sp", size_hint_x=None, width=dp(70))
+        gear = Factory.FlatButton(text="Ajustes", color=C.chalk, bold=True, font_size="14sp", size_hint_x=None, width=dp(76))
         gear.bind(on_release=lambda *_: app.settings())
         top.add_widget(Widget(size_hint_x=None, width=dp(70))); top.add_widget(Label()); top.add_widget(brand_title())
         top.add_widget(Label()); top.add_widget(gear)
@@ -979,6 +979,8 @@ class DiscoverScreen(Screen):
     def on_results(self, res, err):
         if err:
             self.status.text = err
+            if "client_id" in err or "Jamendo" in err:
+                App.get_running_app().settings()
             return
         self.results += res
         self.status.text = f"{len(self.results)} bases" if self.results else "Sin resultados: prueba otro estilo o fuente"
@@ -1167,6 +1169,23 @@ class PrompterScreen(Screen):
         self.stop()
 
 
+def system_bar_insets() -> tuple[float, float]:
+    """Alto (px) de la barra de estado y de navegación en Android; (0, 0) en el PC."""
+    from kivy.utils import platform
+    if platform != "android":
+        return 0, 0
+    try:
+        from jnius import autoclass
+        res = autoclass("org.kivy.android.PythonActivity").mActivity.getResources()
+
+        def dim(name):
+            i = res.getIdentifier(name, "dimen", "android")
+            return res.getDimensionPixelSize(i) if i > 0 else 0
+        return dim("status_bar_height"), dim("navigation_bar_height")
+    except Exception:
+        return dp(28), dp(24)
+
+
 # ---------- app ----------
 
 class CompasZeroApp(App):
@@ -1186,12 +1205,22 @@ class CompasZeroApp(App):
         self.recorder = recorder.Recorder()
         self._take_sound = None
         self.rhyme_kind = None  # tipo de rima activo (None = modo rimas apagado)
-        self.sm = ScreenManager(transition=FadeTransition(duration=.35))
+        self.sm = ScreenManager(transition=NoTransition())
+        # Android 15 dibuja la app detrás de la barra de estado y la de navegación:
+        # dejamos ese espacio libre para que no tapen los botones de arriba y abajo.
+        top, bottom = system_bar_insets()
+        frame = BoxLayout(padding=(0, top, 0, bottom))
+        with frame.canvas.before:
+            from kivy.graphics import Color, Rectangle
+            Color(*C.ink)
+            bg = Rectangle()
+        frame.bind(pos=lambda w, p: setattr(bg, "pos", p), size=lambda w, sz: setattr(bg, "size", sz))
         for s in (IntroScreen(name="intro"), HomeScreen(name="home"), SongScreen(name="song"),
                   FreestyleScreen(name="freestyle"), ReviewScreen(name="review"), PrompterScreen(name="prompter"), DiscoverScreen(name="discover")):
             self.sm.add_widget(s)
         Window.bind(on_keyboard=self.on_back)
-        return self.sm
+        frame.add_widget(self.sm)
+        return frame
 
     def on_back(self, window, key, *args):
         if key == 27 and self.sm.current == "discover":

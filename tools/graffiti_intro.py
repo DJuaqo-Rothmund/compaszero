@@ -16,6 +16,7 @@ import sys
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+from skimage.graph import MCP_Geometric
 from skimage.morphology import skeletonize
 
 FPS = 25
@@ -77,10 +78,46 @@ def soft_dot(shape, cy, cx, r, strength=1.0):
     return strength * np.exp(-((y - cy) ** 2 + (x - cx) ** 2) / (2 * r * r))
 
 
+def flow_time(mask):
+    """Momento de aparición fluido: distancia recorrida DENTRO de la letra desde su punto de partida.
+    El frente avanza continuo por el trazo (sin saltos entre ramas), como pintura que fluye."""
+    m = mask > .5
+    if not m.any():
+        return np.where(m, 0.0, np.inf), [], 1
+    skel = skeletonize(m)
+    lab, n = ndimage.label(m, structure=np.ones((3, 3)))
+    t = np.full(m.shape, np.inf)
+    path = []
+    offset = 0.0
+    comps = sorted(range(1, n + 1), key=lambda c: np.nonzero(lab == c)[1].min())
+    for c in comps:
+        comp = lab == c
+        sk = skel & comp
+        ys, xs = np.nonzero(sk if sk.any() else comp)
+        # punto de partida: un extremo del trazo, arriba a la izquierda (como empieza una mano)
+        nb = ndimage.convolve(sk.astype(int), np.ones((3, 3)), mode="constant") - 1 if sk.any() else None
+        ends = [(y, x) for y, x in zip(ys, xs) if nb is not None and nb[y, x] == 1]
+        cand = ends or list(zip(ys, xs))
+        start = min(cand, key=lambda p: p[0] * 1.0 + p[1] * 0.6)
+        cost = np.where(comp, 1.0, np.inf)
+        mcp = MCP_Geometric(cost)
+        dist, _ = mcp.find_costs([start])
+        dist = np.where(comp, dist, np.inf)
+        dmax = np.nanmax(dist[np.isfinite(dist)]) or 1
+        t[comp] = offset + dist[comp]
+        # recorrido de la boquilla: puntos del esqueleto ordenados por distancia
+        sy, sx = np.nonzero(sk) if sk.any() else (ys, xs)
+        order = np.argsort(dist[sy, sx])
+        path += [(sy[i], sx[i]) for i in order]
+        offset += dmax + 8
+    total = offset
+    return t / total, path, int(total)
+
+
 class Stroke:
     def __init__(self, mask, start, speed_px, style):
         self.mask = mask
-        self.t, self.path, n = order_skeleton(mask)
+        self.t, self.path, n = flow_time(mask)
         self.start = start
         self.dur = max(n / speed_px, .18)
         self.style = style
@@ -101,7 +138,7 @@ class Stroke:
         u = self.progress(now)
         if u <= 0:
             return None, None
-        soft = {"trazo": .035, "spray": .09, "tag": .02}[self.style]
+        soft = {"trazo": .05, "spray": .10, "tag": .04}[self.style]
         a = np.clip((u - self.t) / soft, 0, 1)
         if self.style == "spray":  # la pintura se va cargando: primero transparente, luego sólida
             a = np.clip(a * .55 + np.clip((u - self.t - .12) / .25, 0, 1) * .45, 0, 1)

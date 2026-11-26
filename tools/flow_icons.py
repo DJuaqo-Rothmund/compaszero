@@ -10,8 +10,11 @@ SRC, OUT = ROOT / "docs/brand/icons/flow", ROOT / "src/assets/icons"
 VARIANTS = {"": ((245, 245, 245), (229, 25, 75)), "_off": ((138, 138, 138), (122, 18, 41))}
 
 
-def convert(path, name, size=144):
-    a = np.asarray(Image.open(path).convert("RGB")).astype(float) / 255
+def convert(path, name, size=144, inset=0):
+    img = Image.open(path).convert("RGB")
+    if inset:  # quitar un marco
+        img = img.crop((inset, inset, img.width - inset, img.height - inset))
+    a = np.asarray(img).astype(float) / 255
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     white = np.clip((np.minimum(np.minimum(r, g), b) - .12) / .7, 0, 1)
     red = np.clip((r - np.maximum(g, b) - .15) / .5, 0, 1)
@@ -29,8 +32,11 @@ def convert(path, name, size=144):
         im.save(OUT / f"{name}{suffix}.png")
 
 
-for n in ("ideas", "descargar", "canciones", "gear"):
+NAMES = ["ideas", "ideas_cuaderno", "descargar", "canciones", "gear", "back", "voz", "plus", "stop", "play",
+         "enviar", "importar", "mas", "freestyle", "descubrir"]
+for n in NAMES:
     convert(SRC / f"{n}.jpg", n)
+convert(SRC / "buscar.jpg", "buscar", inset=80)
 
 # ícono de la app: fondo negro completo (se quita el borde blanco del círculo)
 im = Image.open(SRC / "app.jpg").convert("RGB")

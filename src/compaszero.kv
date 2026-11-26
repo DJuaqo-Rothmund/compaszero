@@ -284,20 +284,20 @@
 
 <NavItem>:
     orientation: "vertical"
-    padding: 0, dp(8), 0, dp(6)
+    padding: 0, dp(6), 0, dp(6)
     spacing: dp(2)
     canvas.before:
         Color:
             rgba: (C.rec[0], C.rec[1], C.rec[2], .16) if self.active else (0, 0, 0, 0)
         RoundedRectangle:
-            pos: self.center_x - dp(30), self.top - dp(40)
-            size: dp(60), dp(32)
-            radius: [dp(16)]
+            pos: self.center_x - dp(32), self.top - dp(44)
+            size: dp(64), dp(38)
+            radius: [dp(19)]
     Image:
         source: icon(root.icon_name if root.active else root.icon_name + "_off")
         fit_mode: "contain"
         size_hint_y: None
-        height: dp(28)
+        height: dp(34)
     Label:
         text: root.name
         font_size: "12sp"

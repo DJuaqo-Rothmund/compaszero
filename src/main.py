@@ -500,7 +500,7 @@ class HomeScreen(Screen):
             root.add_widget(Composer("Escribe una barra…", lambda t: (app.nb.add_bar(t), self.render()),
                                      context=lambda: ideas[0].text if ideas else ""))
 
-        nav = BoxLayout(size_hint_y=None, height=dp(68))
+        nav = BoxLayout(size_hint_y=None, height=dp(72))
         for i, (name, ic) in enumerate([("Canciones", "canciones"), ("Ideas", "ideas"), ("Freestyle", "freestyle")]):
             b = NavItem(name=name, icon_name=ic, active=self.tab == i)
             b.bind(on_release=lambda w, i=i: self.switch(i))
@@ -641,7 +641,7 @@ class SongScreen(Screen):
         strip = BoxLayout(size_hint_y=None, height=dp(44), padding=(dp(12), dp(4)), spacing=dp(8))
         name = os.path.splitext(os.path.basename(song.beat))[0] if song.beat else "Sin base"
         playing = app.beat.playing and app.beat.path == song.beat
-        btn = Factory.IconButton(source=icon("stop" if playing else "play"), size=(dp(36), dp(36)), pos_hint={"center_y": .5})
+        btn = Factory.IconButton(source=icon("stop" if playing else "play"), size=(dp(42), dp(42)), pos_hint={"center_y": .5})
         lbl = Factory.FlatButton(text=f"{name} · {song.bpm} BPM", font_size="14sp", halign="left", color=C.chalk)
         lbl.bind(size=lambda w, s: setattr(w, "text_size", s), on_release=lambda *_: app.pick_song_beat(song))
         lbl.valign = "middle"

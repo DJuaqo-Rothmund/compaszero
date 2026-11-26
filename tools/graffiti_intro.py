@@ -112,20 +112,35 @@ class Stroke:
 
 
 def render(folder, style, out, scale=1.0):
-    letters = [load(folder, f"letter{i}") for i in range(7)]
-    lines = [load(folder, "line0"), load(folder, "line1")]
-    symbol, tagline, dots = load(folder, "symbol"), load(folder, "tagline"), load(folder, "dots")
+    import glob
+    import os
+    separated = sorted(glob.glob(f"{folder}/[0-9][0-9]_*.png"))
+    symbol, tagline = load(folder, "symbol"), load(folder, "tagline")
+    if separated:
+        # letras sueltas (cada una su propio trazo, en el orden del nombre) + puntos de spray
+        names = [os.path.basename(f)[:-4] for f in separated]
+        letters = [load(folder, n) for n in names if not n.split("_", 1)[1].startswith(("linea", "comilla", "coma"))]
+        lines = [load(folder, n) for n in names if n.split("_", 1)[1].startswith(("linea", "comilla", "coma"))]
+        dots = np.zeros_like(symbol)
+        for f in glob.glob(f"{folder}/punto_*.png"):
+            dots = np.maximum(dots, load(folder, os.path.basename(f)[:-4]))
+    else:
+        letters = [load(folder, f"letter{i}") for i in range(7)]
+        lines = [load(folder, "line0"), load(folder, "line1")]
+        dots = load(folder, "dots")
     H, W = symbol.shape
     speed = {"trazo": 520, "spray": 430, "tag": 900}[style]  # píxeles de esqueleto por segundo
     t = .75
     strokes = []
     for m in letters:
-        s = Stroke(m, t, speed, style)
+        s = Stroke(m, t, speed * RNG.uniform(.85, 1.15), style)  # cada letra con su propio pulso
         strokes.append(s)
-        t += s.dur * (.92 if style != "tag" else .7)
+        t += s.dur * (.92 if style != "tag" else .7) + (RNG.uniform(.02, .09) if separated else 0)
     t_dots = t
     for m in lines:
         s = Stroke(m, t, speed * 2.2, style)
+        if separated:
+            s.drip = None  # líneas y comillas: toques rápidos, sin chorreón
         strokes.append(s)
         t += s.dur * .8
     t_tag = t + .25

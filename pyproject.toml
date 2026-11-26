@@ -1,6 +1,6 @@
 [project]
 name = "compaszero"
-version = "0.10.0"
+version = "0.11.0"
 description = "Cuaderno de rimas para escribir rap. Antes del beat, nace la idea."
 requires-python = ">=3.10"
 dependencies = [
@@ -17,7 +17,7 @@ product = "CompásZero"
 company = "CompásZero"
 copyright = "CompásZero"
 # número de versión interno: debe ser mayor que el de las versiones anteriores (Kivy usaba 1024100)
-build_number = 2000100
+build_number = 2000110
 # micrófono: grabar tomas, notas de voz, dictado y freestyle
 permissions = ["microphone"]
 

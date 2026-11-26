@@ -1003,7 +1003,8 @@ class DiscoverScreen(Screen):
         title = Label(text=t["title"], bold=True, font_size="15sp", size_hint_y=None, height=dp(22), halign="left", shorten=True)
         lic = discover.license_label(t["license"])
         pub = "[color=9CCC65]sirve para publicar[/color]" if t["publish_ok"] else "[color=F5A623]solo uso personal[/color]"
-        info = Label(text=f"{esc(t['artist'])} · {fmt_time(t['duration'])} · {lic} · {pub}", markup=True,
+        dur = fmt_time(t["duration"]) if t["duration"] else "—"
+        info = Label(text=f"{esc(t['artist'])} · {dur} · {lic} · {pub}", markup=True,
                      color=C.muted, font_size="12sp", size_hint_y=None, height=dp(20), halign="left", shorten=True)
         src = Label(text=t["source"], color=C.muted, font_size="11sp", size_hint_y=None, height=dp(16), halign="left")
         for l in (title, info, src):

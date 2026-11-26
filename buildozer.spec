@@ -4,7 +4,7 @@ package.name = compaszero
 package.domain = com.compaszero
 source.dir = src
 source.include_exts = py,kv,png,jpg,zip,ttf,tsv,wav
-version = 0.1.0
+version = 0.4.0
 requirements = python3,kivy==2.3.1,pyjnius,plyer,android
 orientation = portrait
 fullscreen = 0

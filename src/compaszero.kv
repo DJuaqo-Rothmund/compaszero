@@ -38,7 +38,7 @@
             rounded_rectangle: self.x, self.y, self.width, self.height, dp(16)
             width: dp(1)
         Color:
-            rgba: C.rec
+            rgba: C.accent
         RoundedRectangle:
             pos: self.x, self.y + dp(16)
             size: dp(3), self.height - dp(32)
@@ -100,11 +100,11 @@
     font_size: "15sp"
 
 <RecButton@ButtonBehavior+Label>:
-    color: C.on_rec
+    color: C.on_accent
     bold: True
     canvas.before:
         Color:
-            rgba: C.rec if self.state == "normal" else C.rec_off
+            rgba: C.accent if self.state == "normal" else C.line
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -115,11 +115,11 @@
     size: self.texture_size[0] + dp(28), dp(34)
     font_size: "13sp"
     bold: self.state == "down"
-    color: C.on_rec if self.state == "down" else C.chalk
+    color: C.on_accent if self.state == "down" else C.chalk
     allow_no_selection: False
     canvas.before:
         Color:
-            rgba: C.rec if self.state == "down" else C.graphite
+            rgba: C.accent if self.state == "down" else C.graphite
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -147,14 +147,14 @@
             size: self.size
             radius: [dp(14)]
         Color:
-            rgba: C.rec if self.focus else C.line
+            rgba: C.accent if self.focus else C.line
         Line:
             rounded_rectangle: self.x, self.y, self.width, self.height, dp(14)
             width: dp(1.2)
         Color:  # Kivy pinta el texto con el último color activo
             rgba: self.foreground_color if self.text else self.hint_text_color
     foreground_color: C.chalk
-    cursor_color: C.rec
+    cursor_color: C.accent
     hint_text_color: C.muted
     padding: dp(12), dp(12)
 
@@ -236,7 +236,7 @@
     font_size: "14sp"
     canvas.before:
         Color:
-            rgba: C.graphite2 if self.state == "normal" else C.rec
+            rgba: C.graphite2 if self.state == "normal" else C.accent
         RoundedRectangle:
             pos: self.pos
             size: self.size
@@ -246,12 +246,6 @@
     size_hint_y: None
     height: dp(56)
     padding: dp(8), 0
-    canvas.before:
-        Color:
-            rgba: C.ink
-        Rectangle:
-            pos: self.pos
-            size: self.size
 
 <RecDot>:
     size_hint: None, None
@@ -279,7 +273,7 @@
     fit_mode: "contain"
     canvas.before:
         Color:
-            rgba: C.rec if self.state == "normal" else C.rec_off
+            rgba: C.accent if self.state == "normal" else C.line
         Ellipse:
             pos: self.pos
             size: self.size
@@ -290,7 +284,7 @@
     spacing: dp(2)
     canvas.before:
         Color:
-            rgba: (C.rec[0], C.rec[1], C.rec[2], .16) if self.active else (0, 0, 0, 0)
+            rgba: (C.accent[0], C.accent[1], C.accent[2], .16) if self.active else (0, 0, 0, 0)
         RoundedRectangle:
             pos: self.center_x - dp(32), self.top - dp(44)
             size: dp(64), dp(38)

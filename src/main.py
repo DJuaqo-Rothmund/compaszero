@@ -30,7 +30,7 @@ from cz import inspiration, recorder, android_io
 from cz.db import STATUSES
 import re
 from cz.rhymes import TYPES, RhymeIndex, last_word
-from cz.theme import C, MONO, icon, icon_raw, THEMES, apply_theme
+from cz.theme import C, MONO, icon, icon_raw, THEMES, apply_theme, ACCENTS, TEXTURES, apply_accent, apply_texture, texture_path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INTRO_SECONDS = 6.0
@@ -419,7 +419,7 @@ class HomeScreen(Screen):
         streak = app.nb.streak()
         box = Factory.Surface(orientation="vertical", size_hint_y=None, height=dp(138), padding=dp(14), spacing=dp(4))
         head = Label(text=f"[b]RETO DEL DÍA[/b]   [color=8A8A8A]racha: {streak} {'día' if streak == 1 else 'días'}[/color]",
-                     markup=True, color=C.rec, font_size="13sp", size_hint_y=None, height=dp(20), halign="left")
+                     markup=True, color=C.accent, font_size="13sp", size_hint_y=None, height=dp(20), halign="left")
         theme = Label(text=self._theme, bold=True, font_size="17sp", size_hint_y=None, height=dp(26), halign="left")
         word = Label(text=f"Usa la palabra: [b]{self._word}[/b]", markup=True, color=C.muted, font_size="14sp",
                      size_hint_y=None, height=dp(22), halign="left")
@@ -608,7 +608,7 @@ class SongScreen(Screen):
             groups.setdefault(b.section or "Sin sección", []).append(b)
         items = []
         if song.tags or song.status:
-            info = Label(text=f"[color=E5194B]{esc(song.status)}[/color]   [color=8A8A8A]{esc(song.tags)}[/color]",
+            info = Label(text=f"[color={C.accent_hex}]{esc(song.status)}[/color]   [color=8A8A8A]{esc(song.tags)}[/color]",
                          markup=True, font_size="13sp", size_hint_y=None, height=dp(20), halign="left")
             info.bind(size=lambda w, s: setattr(w, "text_size", s))
             items.append(info)
@@ -616,14 +616,14 @@ class SongScreen(Screen):
         for name in SECTIONS + [k for k in groups if k not in SECTIONS]:
             if name in groups:
                 n = len(groups[name])
-                h = Label(text=f"[b][color=E5194B]{name.upper()}[/color][/b]   [color=8A8A8A][size=12sp]{n} compases ≈ {fmt_time(n * spb)}[/size][/color]",
+                h = Label(text=f"[b][color={C.accent_hex}]{name.upper()}[/color][/b]   [color=8A8A8A][size=12sp]{n} compases ≈ {fmt_time(n * spb)}[/size][/color]",
                           markup=True, size_hint_y=None, height=dp(34), halign="left", valign="bottom")
                 h.bind(size=lambda w, s: setattr(w, "text_size", s))
                 items.append(h)
                 items += [BarRow(b, app.edit_bar, colors.get(b.id)) for b in groups[name]]
         takes = app.nb.takes(song.id)
         if takes:
-            h = Label(text="[b][color=E5194B]TOMAS[/color][/b]", markup=True, size_hint_y=None, height=dp(34),
+            h = Label(text=f"[b][color={C.accent_hex}]TOMAS[/color][/b]", markup=True, size_hint_y=None, height=dp(34),
                       halign="left", valign="bottom")
             h.bind(size=lambda w, s: setattr(w, "text_size", s))
             items.append(h)
@@ -653,7 +653,7 @@ class SongScreen(Screen):
         pulse.bind(pos=lambda w, p: setattr(rect, "pos", p), size=lambda w, sz: setattr(rect, "size", sz))
 
         def on_beat(n):
-            col.rgba = C.rec if n % 4 == 1 else C.chalk  # tiempo 1 de cada compás en rojo
+            col.rgba = C.accent if n % 4 == 1 else C.chalk  # tiempo 1 de cada compás en rojo
             Animation.cancel_all(col)
             Animation(rgba=C.graphite2, d=.25).start(col)
 
@@ -752,7 +752,7 @@ class FreestyleScreen(Screen):
         self.words_on = getattr(self, "words_on", False)
         wt = Factory.Chip(text="Palabras al azar", state="down" if self.words_on else "normal", allow_no_selection=True)
         wt.bind(on_release=lambda w: setattr(self, "words_on", w.state == "down"))
-        self.word_lbl = Label(text="", bold=True, font_size="22sp", color=C.rec)
+        self.word_lbl = Label(text="", bold=True, font_size="22sp", color=C.accent)
         wrow.add_widget(wt); wrow.add_widget(self.word_lbl)
         root.add_widget(wrow)
         self.hint = Label(text="Usa audífonos: así el micrófono escucha tu voz y no la pista.",
@@ -1011,7 +1011,7 @@ class DiscoverScreen(Screen):
         for t in self.results:
             self.box.add_widget(self.card(t))
         if self.results:
-            more = Factory.FlatButton(text="Más resultados", color=C.rec, size_hint_y=None, height=dp(44))
+            more = Factory.FlatButton(text="Más resultados", color=C.accent, size_hint_y=None, height=dp(44))
             more.bind(on_release=lambda *_: (setattr(self, "page", self.page + 1), self.search()))
             self.box.add_widget(more)
 
@@ -1107,7 +1107,7 @@ class PrompterScreen(Screen):
         for b in app.nb.bars(song.id):
             if b.section != current:
                 current = b.section
-                h = Label(text=(current or "").upper(), color=C.rec, bold=True, size_hint_y=None, height=dp(26), halign="left")
+                h = Label(text=(current or "").upper(), color=C.accent, bold=True, size_hint_y=None, height=dp(26), halign="left")
                 h.bind(size=lambda w, sz: setattr(w, "text_size", sz))
                 box.add_widget(h)
             l = Label(text=b.text, font_name=MONO, font_size="21sp", color=C.muted, size_hint_y=None, halign="left")
@@ -1204,6 +1204,40 @@ def system_bar_insets() -> tuple[float, float]:
         return dp(28), dp(24)
 
 
+def paint_background(frame):
+    """Fondo de la app: color del tema + textura repetida (grano, papel, concreto…)."""
+    from kivy.graphics import Color, Rectangle
+    from kivy.core.image import Image as CoreImage
+    frame.canvas.before.clear()
+    with frame.canvas.before:
+        Color(*C.ink)
+        base = Rectangle(pos=frame.pos, size=frame.size)
+        tex_rect, margin = None, None
+        path = texture_path()
+        if path and os.path.exists(path):
+            tex = CoreImage(path).texture
+            tex.wrap = "repeat"
+            # claro sobre temas oscuros, oscuro sobre temas claros
+            Color(0, 0, 0, .55) if C.light else Color(1, 1, 1, .32)
+            tex_rect = Rectangle(texture=tex, pos=frame.pos, size=frame.size)
+            if C.texture == "Cuaderno":  # línea de margen del cuaderno
+                Color(C.accent[0], C.accent[1], C.accent[2], .35)
+                margin = Rectangle(pos=(frame.x + dp(30), frame.y), size=(dp(1.5), frame.height))
+
+    def layout(*_):
+        base.pos, base.size = frame.pos, frame.size
+        if tex_rect:
+            tex_rect.pos, tex_rect.size = frame.pos, frame.size
+            u, v = frame.width / 256.0, frame.height / 256.0
+            tex_rect.tex_coords = (0, 0, u, 0, u, v, 0, v)
+        if margin:
+            margin.pos, margin.size = (frame.x + dp(30), frame.y), (dp(1.5), frame.height)
+    frame.unbind(pos=getattr(frame, "_bg_cb", None), size=getattr(frame, "_bg_cb", None)) if getattr(frame, "_bg_cb", None) else None
+    frame._bg_cb = layout
+    frame.bind(pos=layout, size=layout)
+    layout()
+
+
 # ---------- app ----------
 
 class CompasZeroApp(App):
@@ -1224,17 +1258,16 @@ class CompasZeroApp(App):
         self._take_sound = None
         self.rhyme_kind = None  # tipo de rima activo (None = modo rimas apagado)
         apply_theme(os.getenv("CZ_THEME") or self.nb.get_setting("theme", "Negro estudio"))
+        apply_accent(os.getenv("CZ_ACCENT") or self.nb.get_setting("accent", "Rojo REC"))
+        apply_texture(os.getenv("CZ_TEXTURE") or self.nb.get_setting("texture", "Liso"))
         Window.clearcolor = C.ink
         self.sm = ScreenManager(transition=NoTransition())
         # Android 15 dibuja la app detrás de la barra de estado y la de navegación:
         # dejamos ese espacio libre para que no tapen los botones de arriba y abajo.
         top, bottom = system_bar_insets()
         frame = BoxLayout(padding=(0, top, 0, bottom))
-        with frame.canvas.before:
-            from kivy.graphics import Color, Rectangle
-            Color(*C.ink)
-            bg = Rectangle()
-        frame.bind(pos=lambda w, p: setattr(bg, "pos", p), size=lambda w, sz: setattr(bg, "size", sz))
+        bg = None
+        paint_background(frame)
         for s in (IntroScreen(name="intro"), HomeScreen(name="home"), SongScreen(name="song"),
                   FreestyleScreen(name="freestyle"), ReviewScreen(name="review"), PrompterScreen(name="prompter"), DiscoverScreen(name="discover")):
             self.sm.add_widget(s)
@@ -1244,18 +1277,19 @@ class CompasZeroApp(App):
         self._frame_bg = bg
         return frame
 
-    def set_theme(self, name):
-        """Cambia el tema al instante reconstruyendo las pantallas."""
-        self.nb.set_setting("theme", name)
-        apply_theme(name)
+    def set_look(self, theme=None, accent=None, texture=None):
+        """Cambia tema, color de acento o fondo al instante reconstruyendo las pantallas."""
+        if theme:
+            self.nb.set_setting("theme", theme)
+        if accent:
+            self.nb.set_setting("accent", accent)
+        if texture:
+            self.nb.set_setting("texture", texture)
+        apply_theme(self.nb.get_setting("theme", "Negro estudio"))
+        apply_accent(self.nb.get_setting("accent", "Rojo REC"))
+        apply_texture(self.nb.get_setting("texture", "Liso"))
         Window.clearcolor = C.ink
-        self.frame.canvas.before.clear()
-        with self.frame.canvas.before:
-            from kivy.graphics import Color, Rectangle
-            Color(*C.ink)
-            self._frame_bg = Rectangle(pos=self.frame.pos, size=self.frame.size)
-        self.frame.bind(pos=lambda w, p: setattr(self._frame_bg, "pos", p),
-                        size=lambda w, sz: setattr(self._frame_bg, "size", sz))
+        paint_background(self.frame)
         self.frame.remove_widget(self.sm)
         self.sm = ScreenManager(transition=NoTransition())
         for s in (IntroScreen(name="intro"), HomeScreen(name="home"), SongScreen(name="song"),
@@ -1464,9 +1498,22 @@ class CompasZeroApp(App):
         trow.bind(minimum_height=trow.setter("height"))
         for tname in THEMES:
             c = Factory.Chip(text=tname, group="theme", state="down" if tname == C.name else "normal")
-            c.bind(on_release=lambda w, tname=tname: (holder["mv"].dismiss(), self.set_theme(tname)))
+            c.bind(on_release=lambda w, tname=tname: (holder["mv"].dismiss(), self.set_look(theme=tname)))
             trow.add_widget(c)
         body.add_widget(trow)
+
+        def chooser(title, options, current, key):
+            body.add_widget(Label(text=title, color=C.muted, font_size="13sp", size_hint_y=None, height=dp(20),
+                                  halign="left", text_size=(Window.width * .8, None)))
+            row = StackLayout(size_hint_y=None, spacing=dp(6))
+            row.bind(minimum_height=row.setter("height"))
+            for o in options:
+                c = Factory.Chip(text=o, group=key, state="down" if o == current else "normal")
+                c.bind(on_release=lambda w, o=o: (holder["mv"].dismiss(), self.set_look(**{key: o})))
+                row.add_widget(c)
+            body.add_widget(row)
+        chooser("Color de botones y destacados", list(ACCENTS), C.accent_name, "accent")
+        chooser("Fondo", TEXTURES, C.texture, "texture")
         body.add_widget(Label(text="Client ID de Jamendo (para Descubrir bases)", color=C.muted, font_size="13sp",
                               size_hint_y=None, height=dp(20), halign="left", text_size=(Window.width * .8, None)))
         jid = text_input(self.nb.get_setting("jamendo_client_id"), hint="pega aquí tu client_id", lyric=False)

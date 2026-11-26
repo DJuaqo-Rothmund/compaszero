@@ -23,7 +23,7 @@ permissions = ["microphone"]
 path = "src"
 
 [tool.flet.dev_packages]
-flet-speech = "../extensions/flet-speech"
+flet-speech = "extensions/flet-speech"
 
 [tool.flet.splash]
 color = "#000000"

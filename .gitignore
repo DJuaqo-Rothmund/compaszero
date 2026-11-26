@@ -7,3 +7,4 @@ __pycache__/
 apk/
 bin/
 build/
+src/assets/config.json

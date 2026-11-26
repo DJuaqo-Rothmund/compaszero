@@ -94,6 +94,14 @@ class App:
         self.speller = Speller(personal=self.nb.personal_words())
         self.thesaurus = Thesaurus()
         g = self.nb.get_setting
+        if not g("jamendo_client_id"):
+            try:
+                with open(os.path.join(HERE, "assets", "config.json"), encoding="utf-8") as f:
+                    cid = json.load(f).get("jamendo_client_id", "")
+                if cid:
+                    self.nb.set_setting("jamendo_client_id", cid)
+            except (OSError, ValueError):
+                pass
         self.L = Look(os.getenv("CZ_THEME") or g("theme", "Negro estudio"),
                       os.getenv("CZ_ACCENT") or g("accent", "Rojo REC"),
                       os.getenv("CZ_TEXTURE") or g("texture", "Grano"))
@@ -1093,6 +1101,7 @@ class App:
                 self.d_status.value = st["status"]
                 self.fill_discover()
                 self.page.update()
+        self.nb.count_request(st["source"])
         discover.search(st["source"], st["style"], st["query"], self.nb.get_setting("jamendo_client_id"), st["publish"],
                         st["page"], done)
 
@@ -1342,6 +1351,30 @@ class App:
         run()
         return self.card(ft.Column([f, out], spacing=12), padding=14)
 
+    def check_quota(self):
+        """Consulta el saldo de Openverse (real) y valida Jamendo (con conteo propio)."""
+        L = self.L
+        ov = self.txt("Openverse: consultando…", 14)
+        jm = self.txt("Jamendo: consultando…", 14)
+        jd, jmon = self.nb.requests_used("Jamendo")
+        od, _ = self.nb.requests_used("Openverse")
+
+        def ov_done(r, err):
+            ov.value = (f"Openverse: {r['day']} de {r['day_limit']} búsquedas disponibles hoy "
+                        f"({r['minute']} en este minuto). Hoy hiciste {od}." if r else f"Openverse: {err}")
+            safe_update(ov)
+
+        def jm_done(r, err):
+            if r:
+                jm.value = (f"Jamendo: tu clave funciona. Jamendo no informa el saldo exacto; hoy hiciste {jd} búsquedas "
+                            f"y {jmon} este mes (el plan gratis permite aprox. 35.000 al mes).")
+            else:
+                jm.value = f"Jamendo: {err}"
+            safe_update(jm)
+        self.dialog("Consultas disponibles", ft.Column([ov, jm], tight=True, spacing=12), [("Cerrar", None)])
+        discover.quota("Openverse", "", ov_done)
+        discover.quota("Jamendo", self.nb.get_setting("jamendo_client_id"), jm_done)
+
     # ================= ajustes =================
     def open_settings(self):
         L = self.L
@@ -1391,9 +1424,11 @@ class App:
             chooser("Color de botones y destacados", list(ACCENTS), L.accent_name, "accent"),
             chooser("Fondo", TEXTURES, L.texture, "texture"),
             jid,
+            self.button("Ver consultas que me quedan hoy", lambda e: self.check_quota(), primary=False, height=44),
             ft.Row([self.button("Guardar copia", export, primary=False, expand=True, height=44),
                     self.button("Restaurar", restore, primary=False, expand=True, height=44)], spacing=8),
-            self.txt("La copia incluye canciones, ideas, freestyles y tu diccionario (no los audios). Puedes guardarla en Google Drive.",
+            self.txt("La copia incluye canciones, ideas, freestyles, tu diccionario y tus ajustes (también el client ID). "
+                     "No incluye los audios. Puedes guardarla en Google Drive.",
                      11, L.muted),
             self.txt(f"Mi diccionario: {', '.join(words_) if words_ else '(vacío)'}", 12, L.muted)], spacing=14, tight=True)
         self.sheet(content)

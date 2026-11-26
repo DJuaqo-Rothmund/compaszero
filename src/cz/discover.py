@@ -184,3 +184,32 @@ def credits_for(beat_path: str) -> dict | None:
         with open(meta, encoding="utf-8") as f:
             return json.load(f)
     return None
+
+
+def quota(source: str, client_id: str, done):
+    """Consulta cuántas búsquedas quedan. done(texto, error).
+    Openverse informa su saldo en las cabeceras; Jamendo no, así que solo se valida la clave."""
+
+    def work():
+        try:
+            if source == "Openverse":
+                with _open("https://api.openverse.org/v1/audio/?q=beat&page_size=1", 20) as r:
+                    h = r.headers
+                    day = h.get("x-ratelimit-available-anon_sustained")
+                    day_lim = h.get("x-ratelimit-limit-anon_sustained", "").split("/")[0]
+                    minute = h.get("x-ratelimit-available-anon_burst")
+                    done({"day": day, "day_limit": day_lim, "minute": minute}, None)
+            else:
+                if not client_id:
+                    raise ValueError("Falta tu client_id de Jamendo")
+                data = _get_json(f"https://api.jamendo.com/v3.0/tracks/?client_id={urllib.parse.quote(client_id)}&format=json&limit=1")
+                parse_jamendo(data)  # lanza error si la clave no sirve
+                done({"valid": True}, None)
+        except urllib.error.HTTPError as e:
+            done(None, "Sin consultas por ahora (límite alcanzado)" if e.code == 429 else
+                 "Clave de Jamendo no válida" if e.code in (401, 403) else f"Error {e.code}")
+        except urllib.error.URLError:
+            done(None, "Sin conexión a internet")
+        except Exception as e:
+            done(None, str(e))
+    threading.Thread(target=work, daemon=True).start()

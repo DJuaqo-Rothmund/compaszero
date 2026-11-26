@@ -303,6 +303,19 @@ class Notebook:
         with self.conn:
             self.conn.execute("INSERT OR REPLACE INTO setting VALUES (?, ?)", (key, value))
 
+    def count_request(self, source: str):
+        """Lleva la cuenta de búsquedas por día y por mes (Jamendo no informa su saldo)."""
+        import datetime
+        today = datetime.date.today()
+        for key in (f"req_{source}_{today:%Y%m%d}", f"req_{source}_{today:%Y%m}"):
+            self.set_setting(key, str(int(self.get_setting(key, "0")) + 1))
+
+    def requests_used(self, source: str) -> tuple[int, int]:
+        import datetime
+        today = datetime.date.today()
+        return (int(self.get_setting(f"req_{source}_{today:%Y%m%d}", "0")),
+                int(self.get_setting(f"req_{source}_{today:%Y%m}", "0")))
+
     # diccionario personal
     def personal_words(self) -> set[str]:
         return {r[0] for r in self.conn.execute("SELECT word FROM word")}
@@ -339,7 +352,7 @@ class Notebook:
             cur = self.conn.execute(sql)
             names = [c[0] for c in cur.description]
             return [dict(zip(names, r)) for r in cur]
-        data = {t: rows(f"SELECT * FROM {t}") for t in ("song", "bar", "freestyle", "freestyle_line", "version", "word")}
+        data = {t: rows(f"SELECT * FROM {t}") for t in ("song", "bar", "freestyle", "freestyle_line", "version", "word", "setting")}
         data["app"], data["format"] = "CompásZero", 1
         return json.dumps(data, ensure_ascii=False)
 
@@ -351,7 +364,8 @@ class Notebook:
         with self.conn:
             for t in ("version", "freestyle_line", "freestyle", "bar", "take", "song", "word"):
                 self.conn.execute(f"DELETE FROM {t}")
-            for t in ("song", "bar", "freestyle", "freestyle_line", "version", "word"):
+            for t in ("song", "bar", "freestyle", "freestyle_line", "version", "word", "setting"):
                 for row in data.get(t, []):
                     cols = ", ".join(row)
-                    self.conn.execute(f"INSERT INTO {t} ({cols}) VALUES ({', '.join('?' * len(row))})", tuple(row.values()))
+                    verb = "INSERT OR REPLACE" if t == "setting" else "INSERT"
+                    self.conn.execute(f"{verb} INTO {t} ({cols}) VALUES ({', '.join('?' * len(row))})", tuple(row.values()))

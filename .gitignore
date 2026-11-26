@@ -1,7 +1,9 @@
+*.egg-info/
 *.pyc
 .DS_Store
 .buildozer/
 .pytest_cache/
 __pycache__/
-bin/
 apk/
+bin/
+build/

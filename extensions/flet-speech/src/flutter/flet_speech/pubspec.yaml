@@ -1,0 +1,15 @@
+name: flet_speech
+description: Dictado por voz para Flet (speech_to_text).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  speech_to_text: ^7.0.0
+  flet:
+    path: ../../../../../../../packages/flet

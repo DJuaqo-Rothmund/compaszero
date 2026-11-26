@@ -26,12 +26,11 @@ UA = "CompasZero/0.3 (app de escritura de rap)"
 
 
 def _ssl_context():
-    """En Android Python no ve los certificados del sistema: usamos los de certifi."""
+    """En Android Python no siempre ve los certificados del sistema: usamos los de certifi si están."""
     import ssl
     try:
-        from kivy.utils import platform
-        if platform == "android":
-            import certifi
+        import certifi
+        if os.environ.get("FLET_PLATFORM") == "android" or os.path.exists("/system/build.prop"):
             return ssl.create_default_context(cafile=certifi.where())
     except Exception:
         pass
@@ -121,8 +120,7 @@ def _get_json(url: str) -> dict:
 
 
 def search(source: str, style: str, query: str, client_id: str, publish_only: bool, page: int, done):
-    """Busca en un hilo aparte y llama done(resultados, error) en el hilo principal de Kivy."""
-    from kivy.clock import Clock
+    """Busca en un hilo aparte y llama done(resultados, error) al terminar."""
 
     def work():
         try:
@@ -134,16 +132,16 @@ def search(source: str, style: str, query: str, client_id: str, publish_only: bo
                 res = parse_openverse(_get_json(openverse_url(style, query, page, publish_only)))
             if publish_only:
                 res = [r for r in res if r["publish_ok"]]
-            Clock.schedule_once(lambda dt: done(res, None))
+            done(res, None)
         except urllib.error.HTTPError as e:
             msg = ("Demasiadas búsquedas seguidas: espera un minuto" if e.code == 429 else
                    "Clave de Jamendo no válida: revísala en Ajustes" if e.code in (401, 403) else f"Error {e.code}")
-            Clock.schedule_once(lambda dt: done([], msg))
+            done([], msg)
         except urllib.error.URLError:
-            Clock.schedule_once(lambda dt: done([], "Sin conexión a internet"))
+            done([], "Sin conexión a internet")
         except Exception as e:
             msg = str(e)
-            Clock.schedule_once(lambda dt: done([], msg))
+            done([], msg)
     threading.Thread(target=work, daemon=True).start()
 
 
@@ -154,7 +152,6 @@ def safe_name(t: dict) -> str:
 
 def download(track: dict, folder: str, done, progress=None):
     """Descarga la base a la carpeta de bases del usuario + ficha de créditos (.json)."""
-    from kivy.clock import Clock
 
     def work():
         try:
@@ -170,14 +167,14 @@ def download(track: dict, folder: str, done, progress=None):
                     f.write(chunk)
                     got += len(chunk)
                     if progress and total:
-                        Clock.schedule_once(lambda dt, p=got / total: progress(p))
+                        progress(got / total)
             os.replace(path + ".part", path)
             with open(os.path.splitext(path)[0] + ".json", "w", encoding="utf-8") as f:
                 json.dump(track, f, ensure_ascii=False, indent=1)
-            Clock.schedule_once(lambda dt: done(path, None))
+            done(path, None)
         except Exception as e:
             msg = str(e)
-            Clock.schedule_once(lambda dt: done(None, msg))
+            done(None, msg)
     threading.Thread(target=work, daemon=True).start()
 
 

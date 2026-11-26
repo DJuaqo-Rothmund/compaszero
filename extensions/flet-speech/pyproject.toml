@@ -1,0 +1,13 @@
+[project]
+name = "flet-speech"
+version = "0.1.0"
+description = "Dictado por voz (speech_to_text de Flutter) para apps Flet."
+requires-python = ">=3.10"
+dependencies = ["flet"]
+
+[tool.setuptools.package-data]
+"flutter.flet_speech" = ["pubspec.yaml", "lib/**"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

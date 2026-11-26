@@ -1,5 +1,6 @@
 #:import C cz.theme.C
 #:import MONO cz.theme.MONO
+#:import icon cz.theme.icon
 
 <Label>:
     color: C.chalk
@@ -11,20 +12,36 @@
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(14)]
+            radius: [dp(18)]
+        Color:
+            rgba: C.line
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(18)
+            width: dp(1)
 
 <Card>:
     orientation: "vertical"
     size_hint_y: None
-    height: dp(72)
-    padding: dp(16), dp(12)
+    height: dp(76)
+    padding: dp(18), dp(12), dp(16), dp(12)
     canvas.before:
         Color:
-            rgba: C.graphite
+            rgba: C.graphite if self.state == "normal" else C.graphite2
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(12)]
+            radius: [dp(16)]
+        Color:
+            rgba: C.line
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(16)
+            width: dp(1)
+        Color:
+            rgba: C.rec
+        RoundedRectangle:
+            pos: self.x, self.y + dp(16)
+            size: dp(3), self.height - dp(32)
+            radius: [dp(2)]
     Label:
         text: root.title
         font_size: "17sp"
@@ -51,7 +68,7 @@
         RoundedRectangle:
             pos: self.pos
             size: self.size
-            radius: [dp(8)]
+            radius: [dp(12)]
     Label:
         id: lyric
         text: root.text
@@ -94,16 +111,22 @@
 
 <Chip@ToggleButtonBehavior+Label>:
     size_hint: None, None
-    size: self.texture_size[0] + dp(24), dp(34)
-    font_size: "14sp"
+    size: self.texture_size[0] + dp(28), dp(34)
+    font_size: "13sp"
+    bold: self.state == "down"
     allow_no_selection: False
     canvas.before:
         Color:
-            rgba: C.rec if self.state == "down" else C.graphite2
+            rgba: C.rec if self.state == "down" else C.graphite
         RoundedRectangle:
             pos: self.pos
             size: self.size
             radius: [dp(17)]
+        Color:
+            rgba: (0, 0, 0, 0) if self.state == "down" else C.line
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(17)
+            width: dp(1)
 
 <LyricInput@TextInput>:
     # teclado nativo de Android con autocorrector y sugerencias
@@ -111,7 +134,23 @@
     keyboard_suggestions: True
     font_name: MONO
     font_size: "16sp"
-    background_color: C.ink
+    background_normal: ""
+    background_active: ""
+    background_color: 0, 0, 0, 0
+    canvas.before:
+        Color:
+            rgba: C.field
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(14)]
+        Color:
+            rgba: C.rec if self.focus else C.line
+        Line:
+            rounded_rectangle: self.x, self.y, self.width, self.height, dp(14)
+            width: dp(1.2)
+        Color:  # Kivy pinta el texto con el último color activo
+            rgba: self.foreground_color if self.text else self.hint_text_color
     foreground_color: C.chalk
     cursor_color: C.rec
     hint_text_color: C.muted
@@ -168,18 +207,16 @@
             text_validate_unfocus: False
             on_text: root.on_field(self.text)
             on_text_validate: root.submit()
-        FlatButton:
-            text: "Voz" if not root.listening else "..."
-            color: C.rec if root.listening else C.muted
-            font_size: "14sp"
+        IconButton:
+            source: icon("voz" if root.listening else "voz_off")
             size_hint_x: None
-            width: dp(44)
+            width: dp(40)
             on_release: root.dictate()
-        RecButton:
-            text: "+"
-            font_size: "24sp"
-            size_hint_x: None
-            width: dp(52)
+        RoundIcon:
+            source: icon("enviar")
+            size_hint: None, None
+            size: dp(50), dp(50)
+            pos_hint: {"center_y": .5}
             on_release: root.submit()
     Label:
         text: root.count
@@ -228,3 +265,46 @@
         Ellipse:
             pos: self.center_x - dp(22), self.center_y - dp(22)
             size: dp(44), dp(44)
+
+
+<IconButton@ButtonBehavior+Image>:
+    fit_mode: "contain"
+    size_hint: None, None
+    size: dp(44), dp(44)
+    opacity: .6 if self.state == "down" else 1
+
+<RoundIcon@ButtonBehavior+Image>:
+    fit_mode: "contain"
+    canvas.before:
+        Color:
+            rgba: C.rec if self.state == "normal" else C.rec_off
+        Ellipse:
+            pos: self.pos
+            size: self.size
+
+<NavItem>:
+    orientation: "vertical"
+    padding: 0, dp(8), 0, dp(6)
+    spacing: dp(2)
+    canvas.before:
+        Color:
+            rgba: (C.rec[0], C.rec[1], C.rec[2], .16) if self.active else (0, 0, 0, 0)
+        RoundedRectangle:
+            pos: self.center_x - dp(30), self.top - dp(40)
+            size: dp(60), dp(32)
+            radius: [dp(16)]
+    Image:
+        source: icon(root.icon_name if root.active else root.icon_name + "_off")
+        fit_mode: "contain"
+        size_hint_y: None
+        height: dp(28)
+    Label:
+        text: root.name
+        font_size: "12sp"
+        bold: root.active
+        color: C.chalk if root.active else C.muted
+        size_hint_y: None
+        height: dp(16)
+
+<TextInputCutCopyPaste>:
+    size: "300sp", "48sp"

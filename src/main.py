@@ -30,13 +30,46 @@ from cz import inspiration, recorder, android_io
 from cz.db import STATUSES
 import re
 from cz.rhymes import TYPES, RhymeIndex, last_word
-from cz.theme import C, MONO
+from cz.theme import C, MONO, icon
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INTRO_SECONDS = 6.0
 
 
+def _style_copy_paste():
+    """Menú de cortar/copiar/pegar de los campos de texto: en español y con el estilo oscuro de Android."""
+    from kivy.uix.textinput import TextInputCutCopyPaste
+    original = TextInputCutCopyPaste.__init__
+
+    def init(self, **kw):
+        original(self, **kw)
+        self.background_color = (0.16, 0.16, 0.16, 1)
+        self.border = (0, 0, 0, 0)
+        try:
+            self.content.background_color = (0.16, 0.16, 0.16, 1)
+        except Exception:
+            pass
+        for btn, text in ((self.but_cut, "Cortar"), (self.but_copy, "Copiar"),
+                          (self.but_paste, "Pegar"), (self.but_selectall, "Todo")):
+            btn.text = text
+            btn.background_normal = ""
+            btn.background_down = ""
+            btn.background_color = (0.16, 0.16, 0.16, 1)
+            btn.color = C.chalk
+            btn.font_size = "15sp"
+    TextInputCutCopyPaste.__init__ = init
+
+
+_style_copy_paste()
+
+
 # ---------- widgets ----------
+
+class NavItem(ButtonBehavior, BoxLayout):
+    active = BooleanProperty(False)
+    name = StringProperty()
+    icon_name = StringProperty()
+
 
 class Card(ButtonBehavior, BoxLayout):
     title = StringProperty()
@@ -215,22 +248,16 @@ def chips(selected, on_pick) -> StackLayout:
     return row
 
 
-def brand_title() -> BoxLayout:
-    row = BoxLayout(size_hint_x=None, spacing=dp(6))
-    a = Label(text="Compás", bold=True, font_size="20sp", size_hint_x=None)
-    z = Label(text="Zero", bold=True, font_size="20sp", size_hint_x=None)
-    for l in (a, z):
-        l.bind(texture_size=lambda w, s: setattr(w, "width", s[0]))
-    dot = Label(size_hint=(None, None), size=(dp(8), dp(8)), pos_hint={"center_y": .5})
-    with dot.canvas.before:
-        from kivy.graphics import Color, Ellipse
-        Color(*C.rec)
-        e = Ellipse(size=dot.size)
-    dot.bind(pos=lambda w, p: setattr(e, "pos", p))
-    row.add_widget(a); row.add_widget(dot); row.add_widget(z)
-    row.bind(minimum_width=row.setter("width"))
-    row.width = dp(140)
-    return row
+def brand_title():
+    """Logo grafiti «Compás Zero»."""
+    return Image(source=os.path.join(HERE, "assets", "wordmark.png"), fit_mode="contain",
+                 size_hint=(None, None), size=(dp(120), dp(52)), pos_hint={"center_y": .5})
+
+
+def icon_button(name, cb, size=44):
+    b = Factory.IconButton(source=icon(name), size=(dp(size), dp(size)), pos_hint={"center_y": .5})
+    b.bind(on_release=lambda *_: cb())
+    return b
 
 
 def dialog(title, body, actions) -> ModalView:
@@ -417,18 +444,16 @@ class HomeScreen(Screen):
         self.clear_widgets()
         root = BoxLayout(orientation="vertical")
         top = Factory.TopBar()
-        gear = Factory.FlatButton(text="Ajustes", color=C.chalk, bold=True, font_size="14sp", size_hint_x=None, width=dp(76))
-        gear.bind(on_release=lambda *_: app.settings())
-        top.add_widget(Widget(size_hint_x=None, width=dp(70))); top.add_widget(Label()); top.add_widget(brand_title())
-        top.add_widget(Label()); top.add_widget(gear)
+        top.height = dp(64)
+        top.add_widget(Widget(size_hint_x=None, width=dp(44))); top.add_widget(Widget()); top.add_widget(brand_title())
+        top.add_widget(Widget()); top.add_widget(icon_button("gear", app.settings))
         root.add_widget(top)
 
         layer = FloatLayout()
         if self.tab == 0:
             col = BoxLayout(orientation="vertical")
             search = Factory.LyricInput(text=self.query, hint_text="Buscar en títulos, letras y #etiquetas",
-                                        font_name="Roboto", multiline=False, size_hint_y=None, height=dp(46),
-                                        background_color=C.graphite)
+                                        font_name="Roboto", multiline=False, size_hint_y=None, height=dp(46))
             search.bind(text=lambda w, v: self.on_search(v))
             wrap = BoxLayout(size_hint_y=None, height=dp(56), padding=(dp(12), dp(5)))
             wrap.add_widget(search)
@@ -440,8 +465,8 @@ class HomeScreen(Screen):
             else:
                 col.add_widget(scroll_list(cards, spacing=dp(10)))
             layer.add_widget(col)
-            fab = Factory.RecButton(text="+", font_size="28sp", size_hint=(None, None), size=(dp(58), dp(58)),
-                                    pos_hint={"right": .95, "y": .03})
+            fab = Factory.RoundIcon(source=icon("plus"), size_hint=(None, None), size=(dp(60), dp(60)),
+                                    pos_hint={"right": .94, "y": .03})
             fab.bind(on_release=lambda *_: app.new_song())
             layer.add_widget(fab)
             root.add_widget(layer)
@@ -475,9 +500,9 @@ class HomeScreen(Screen):
             root.add_widget(Composer("Escribe una barra…", lambda t: (app.nb.add_bar(t), self.render()),
                                      context=lambda: ideas[0].text if ideas else ""))
 
-        nav = BoxLayout(size_hint_y=None, height=dp(60))
-        for i, name in enumerate(["Canciones", "Ideas", "Freestyle"]):
-            b = Factory.FlatButton(text=name, bold=self.tab == i, color=C.rec if self.tab == i else C.muted)
+        nav = BoxLayout(size_hint_y=None, height=dp(68))
+        for i, (name, ic) in enumerate([("Canciones", "canciones"), ("Ideas", "ideas"), ("Freestyle", "freestyle")]):
+            b = NavItem(name=name, icon_name=ic, active=self.tab == i)
             b.bind(on_release=lambda w, i=i: self.switch(i))
             nav.add_widget(b)
         with nav.canvas.before:
@@ -566,13 +591,11 @@ class SongScreen(Screen):
             return
         root = BoxLayout(orientation="vertical")
         top = Factory.TopBar()
-        back = Factory.FlatButton(text="←", font_name="DejaVuSans", font_size="24sp", size_hint_x=None, width=dp(48))
-        back.bind(on_release=lambda *_: app.go_home())
-        title = Factory.FlatButton(text=song.title, bold=True, font_size="18sp", halign="left")
+        back = icon_button("back", app.go_home)
+        title = Factory.FlatButton(text=song.title, bold=True, font_size="19sp", halign="left")
         title.bind(size=lambda w, s: setattr(w, "text_size", s), on_release=lambda *_: app.rename(song))
         title.valign = "middle"
-        more = Factory.FlatButton(text="Más", color=C.rec, bold=True, size_hint_x=None, width=dp(60))
-        more.bind(on_release=lambda *_: app.song_menu(song))
+        more = icon_button("mas", lambda: app.song_menu(song))
         for w in (back, title, more):
             top.add_widget(w)
         root.add_widget(top)
@@ -618,8 +641,7 @@ class SongScreen(Screen):
         strip = BoxLayout(size_hint_y=None, height=dp(44), padding=(dp(12), dp(4)), spacing=dp(8))
         name = os.path.splitext(os.path.basename(song.beat))[0] if song.beat else "Sin base"
         playing = app.beat.playing and app.beat.path == song.beat
-        btn = Factory.FlatButton(text="■" if playing else "▶", font_name="DejaVuSans", font_size="20sp",
-                                 size_hint_x=None, width=dp(40), color=C.rec)
+        btn = Factory.IconButton(source=icon("stop" if playing else "play"), size=(dp(36), dp(36)), pos_hint={"center_y": .5})
         lbl = Factory.FlatButton(text=f"{name} · {song.bpm} BPM", font_size="14sp", halign="left", color=C.chalk)
         lbl.bind(size=lambda w, s: setattr(w, "text_size", s), on_release=lambda *_: app.pick_song_beat(song))
         lbl.valign = "middle"
@@ -642,7 +664,7 @@ class SongScreen(Screen):
                 return app.pick_song_beat(song)
             else:
                 app.beat.play(song.beat, song.bpm, on_beat)
-            btn.text = "■" if app.beat.playing else "▶"
+            btn.source = icon("stop" if app.beat.playing else "play")
         if playing:
             app.beat.on_beat = on_beat
         btn.bind(on_release=toggle)
@@ -661,9 +683,8 @@ def fmt_time(sec: float) -> str:
 
 def top_bar(title, on_back, right=None):
     top = Factory.TopBar()
-    back = Factory.FlatButton(text="←", font_name="DejaVuSans", font_size="24sp", size_hint_x=None, width=dp(48))
-    back.bind(on_release=lambda *_: on_back())
-    t = Label(text=title, bold=True, font_size="18sp", halign="left", valign="middle")
+    back = icon_button("back", on_back)
+    t = Label(text=title, bold=True, font_size="19sp", halign="left", valign="middle", shorten=True)
     t.bind(size=lambda w, s: setattr(w, "text_size", s))
     top.add_widget(back); top.add_widget(t)
     if right:
@@ -700,12 +721,9 @@ class FreestyleScreen(Screen):
         if self.beat not in [p for _, p in self.beats]:
             self.beat = self.beats[0][1] if self.beats else None
         root = BoxLayout(orientation="vertical")
-        right = BoxLayout(size_hint_x=None, width=dp(176))
-        disc = Factory.FlatButton(text="Descubrir", color=C.rec, bold=True)
-        disc.bind(on_release=lambda *_: setattr(app.sm, "current", "discover"))
-        imp = Factory.FlatButton(text="Importar", color=C.muted)
-        imp.bind(on_release=lambda *_: self.import_beat())
-        right.add_widget(disc); right.add_widget(imp)
+        right = BoxLayout(size_hint_x=None, width=dp(96), spacing=dp(4))
+        right.add_widget(icon_button("descubrir", lambda: setattr(app.sm, "current", "discover")))
+        right.add_widget(icon_button("importar_off", self.import_beat))
         root.add_widget(top_bar("Freestyle", self.leave, right))
 
         row = StackLayout(size_hint_y=None, spacing=dp(6), padding=(dp(12), dp(4)))
@@ -925,9 +943,9 @@ class DiscoverScreen(Screen):
         root.add_widget(top_bar("Descubrir bases", self.leave))
         bar = BoxLayout(size_hint_y=None, height=dp(54), padding=(dp(12), dp(5)), spacing=dp(8))
         self.q = Factory.LyricInput(text=self.query, hint_text="Buscar (opcional): oscuro, piano, 90s…", font_name="Roboto",
-                                    multiline=False, background_color=C.graphite)
+                                    multiline=False)
         self.q.bind(on_text_validate=lambda *_: self.new_search())
-        go = Factory.RecButton(text="Buscar", font_size="14sp", size_hint_x=None, width=dp(80))
+        go = Factory.RoundIcon(source=icon("buscar"), size_hint=(None, None), size=(dp(44), dp(44)), pos_hint={"center_y": .5})
         go.bind(on_release=lambda *_: self.new_search())
         bar.add_widget(self.q); bar.add_widget(go)
         root.add_widget(bar)

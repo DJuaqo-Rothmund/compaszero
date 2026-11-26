@@ -14,3 +14,12 @@ class C:
     graphite = hexc("#1A1A1A")
     graphite2 = hexc("#2A2A2A")
     muted = hexc("#8A8A8A")
+    line = hexc("#2E2E2E")
+    field = hexc("#121212")
+
+
+ICONS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "icons")
+
+
+def icon(name: str) -> str:
+    return os.path.join(ICONS, name + ".png")

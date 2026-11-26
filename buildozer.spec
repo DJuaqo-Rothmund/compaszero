@@ -9,6 +9,7 @@ requirements = python3,kivy==2.3.1,pyjnius,plyer,android
 orientation = portrait
 fullscreen = 0
 icon.filename = %(source.dir)s/assets/icon.png
+presplash.filename = %(source.dir)s/assets/presplash.png
 android.presplash_color = #000000
 android.api = 35
 android.minapi = 24

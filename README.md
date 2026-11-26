@@ -93,6 +93,11 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 - Base vinculada a cada canción, en loop mientras escribes, con metrónomo visual (tiempo 1 en rojo).
 - BPM por canción y compases por sección (≈ duración).
 
+**Descubrir bases**
+- Busca bases libres por estilo (boom bap, trap, lo-fi, drill, jazz rap) en Openverse (sin clave) y Jamendo (con tu client_id gratuito, en Ajustes).
+- Escuchar antes de bajar, descargar al teléfono y usarlas en Freestyle o en cualquier canción.
+- Filtro "Solo para publicar" (sin NC ni ND) y crédito guardado con autor y licencia.
+
 **Grabar**
 - Teleprompter: suena la base, cuenta de un compás, la letra avanza una barra por compás y se graba la toma.
 - Tomas por canción (tocar = escuchar, mantener = borrar) y notas de voz en Ideas.

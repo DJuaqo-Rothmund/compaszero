@@ -22,7 +22,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.factory import Factory
 
 from cz.db import SECTIONS, Bar, Line, Notebook
-from cz import beats, speech
+from cz import beats, speech, discover
 from cz.syllables import count_line, count_line_sung, words as Syllables_words
 from cz.spelling import Speller, Thesaurus
 from cz.rhymes import keys as rhyme_keys
@@ -700,17 +700,25 @@ class FreestyleScreen(Screen):
         if self.beat not in [p for _, p in self.beats]:
             self.beat = self.beats[0][1] if self.beats else None
         root = BoxLayout(orientation="vertical")
-        imp = Factory.FlatButton(text="Importar", color=C.rec, size_hint_x=None, width=dp(90))
+        right = BoxLayout(size_hint_x=None, width=dp(176))
+        disc = Factory.FlatButton(text="Descubrir", color=C.rec, bold=True)
+        disc.bind(on_release=lambda *_: setattr(app.sm, "current", "discover"))
+        imp = Factory.FlatButton(text="Importar", color=C.muted)
         imp.bind(on_release=lambda *_: self.import_beat())
-        root.add_widget(top_bar("Freestyle", self.leave, imp))
+        right.add_widget(disc); right.add_widget(imp)
+        root.add_widget(top_bar("Freestyle", self.leave, right))
 
         row = StackLayout(size_hint_y=None, spacing=dp(6), padding=(dp(12), dp(4)))
         row.bind(minimum_height=row.setter("height"))
         for name, path in self.beats:
-            c = Factory.Chip(text=name, group="beat", state="down" if path == self.beat else "normal")
-            c.bind(on_release=lambda w, p=path: setattr(self, "beat", p))
+            c = Factory.Chip(text=name[:28], group="beat", state="down" if path == self.beat else "normal")
+            c.bind(on_release=lambda w, p=path: (setattr(self, "beat", p), self.show_credit()))
             row.add_widget(c)
         root.add_widget(row)
+        self.credit = Label(text="", color=C.muted, font_size="11sp", size_hint_y=None, height=dp(18), halign="left", shorten=True)
+        self.credit.bind(size=lambda w, sz: setattr(w, "text_size", (sz[0] - dp(24), sz[1])))
+        root.add_widget(self.credit)
+        self.show_credit()
 
         self.lines_box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(6), padding=dp(16))
         self.lines_box.bind(minimum_height=self.lines_box.setter("height"))
@@ -740,6 +748,11 @@ class FreestyleScreen(Screen):
         bottom.add_widget(self.dot); bottom.add_widget(self.clock_lbl)
         root.add_widget(bottom)
         self.add_widget(root)
+
+    def show_credit(self):
+        c = discover.credits_for(self.beat) if self.beat else None
+        self.credit.text = (f"  Base: «{c['title']}» de {c['artist']} · {discover.license_label(c['license'])} · {c['source']}"
+                            if c else "")
 
     def import_beat(self):
         try:
@@ -894,6 +907,161 @@ class ReviewScreen(Screen):
         app.open_song(sid)
 
 
+class DiscoverScreen(Screen):
+    """Buscar bases libres (Jamendo / Openverse), escucharlas y descargarlas al teléfono."""
+    style, source, query, publish_only = "Boom bap", "Openverse", "", False
+
+    def on_pre_enter(self):
+        self.results, self.page = [], 1
+        self.render()
+        self.search()
+
+    def on_leave(self):
+        self.stop_preview()
+
+    def render(self):
+        self.clear_widgets()
+        root = BoxLayout(orientation="vertical")
+        root.add_widget(top_bar("Descubrir bases", self.leave))
+        bar = BoxLayout(size_hint_y=None, height=dp(54), padding=(dp(12), dp(5)), spacing=dp(8))
+        self.q = Factory.LyricInput(text=self.query, hint_text="Buscar (opcional): oscuro, piano, 90s…", font_name="Roboto",
+                                    multiline=False, background_color=C.graphite)
+        self.q.bind(on_text_validate=lambda *_: self.new_search())
+        go = Factory.RecButton(text="Buscar", font_size="14sp", size_hint_x=None, width=dp(80))
+        go.bind(on_release=lambda *_: self.new_search())
+        bar.add_widget(self.q); bar.add_widget(go)
+        root.add_widget(bar)
+
+        def chip_row(options, current, group, cb):
+            row = StackLayout(size_hint_y=None, spacing=dp(6), padding=(dp(12), dp(2)))
+            row.bind(minimum_height=row.setter("height"))
+            for o in options:
+                c = Factory.Chip(text=o, group=group, state="down" if o == current else "normal")
+                c.bind(on_release=lambda w, o=o: cb(o))
+                row.add_widget(c)
+            return row
+        root.add_widget(chip_row(list(discover.STYLES), self.style, "dstyle", lambda o: self.set_and_search("style", o)))
+        src = chip_row(["Openverse", "Jamendo"], self.source, "dsrc", lambda o: self.set_and_search("source", o))
+        pub = Factory.Chip(text="Solo para publicar", state="down" if self.publish_only else "normal", allow_no_selection=True)
+        pub.bind(on_release=lambda w: self.set_and_search("publish_only", w.state == "down"))
+        src.add_widget(pub)
+        root.add_widget(src)
+        self.status = Label(text="", color=C.muted, font_size="13sp", size_hint_y=None, height=dp(26))
+        root.add_widget(self.status)
+        self.box = BoxLayout(orientation="vertical", size_hint_y=None, spacing=dp(8), padding=dp(12))
+        self.box.bind(minimum_height=self.box.setter("height"))
+        sv = ScrollView(do_scroll_x=False)
+        sv.add_widget(self.box)
+        root.add_widget(sv)
+        note = Label(text="Bases con licencia Creative Commons. Se guarda el autor y la licencia para darle crédito.",
+                     color=C.muted, font_size="11sp", size_hint_y=None, height=dp(30), halign="center")
+        note.bind(width=lambda w, v: setattr(w, "text_size", (v - dp(20), None)))
+        root.add_widget(note)
+        self.add_widget(root)
+        self.fill()
+
+    def set_and_search(self, attr, value):
+        setattr(self, attr, value)
+        self.new_search()
+
+    def new_search(self):
+        self.query = self.q.text
+        self.results, self.page = [], 1
+        self.box.clear_widgets()
+        self.search()
+
+    def search(self):
+        app = App.get_running_app()
+        self.status.text = f"Buscando en {self.source}…"
+        discover.search(self.source, self.style, self.query, app.nb.get_setting("jamendo_client_id"),
+                        self.publish_only, self.page, self.on_results)
+
+    def on_results(self, res, err):
+        if err:
+            self.status.text = err
+            return
+        self.results += res
+        self.status.text = f"{len(self.results)} bases" if self.results else "Sin resultados: prueba otro estilo o fuente"
+        self.fill()
+
+    def fill(self):
+        if not hasattr(self, "box"):
+            return
+        self.box.clear_widgets()
+        for t in self.results:
+            self.box.add_widget(self.card(t))
+        if self.results:
+            more = Factory.FlatButton(text="Más resultados", color=C.rec, size_hint_y=None, height=dp(44))
+            more.bind(on_release=lambda *_: (setattr(self, "page", self.page + 1), self.search()))
+            self.box.add_widget(more)
+
+    def card(self, t):
+        app = App.get_running_app()
+        folder = beats.user_dir(app.data_dir)
+        have = os.path.exists(os.path.join(folder, discover.safe_name(t) + ".mp3"))
+        box = Factory.Surface(orientation="vertical", size_hint_y=None, height=dp(108), padding=dp(12), spacing=dp(2))
+        title = Label(text=t["title"], bold=True, font_size="15sp", size_hint_y=None, height=dp(22), halign="left", shorten=True)
+        lic = discover.license_label(t["license"])
+        pub = "[color=9CCC65]sirve para publicar[/color]" if t["publish_ok"] else "[color=F5A623]solo uso personal[/color]"
+        info = Label(text=f"{esc(t['artist'])} · {fmt_time(t['duration'])} · {lic} · {pub}", markup=True,
+                     color=C.muted, font_size="12sp", size_hint_y=None, height=dp(20), halign="left", shorten=True)
+        src = Label(text=t["source"], color=C.muted, font_size="11sp", size_hint_y=None, height=dp(16), halign="left")
+        for l in (title, info, src):
+            l.bind(size=lambda w, sz: setattr(w, "text_size", sz))
+            box.add_widget(l)
+        row = BoxLayout(size_hint_y=None, height=dp(36), spacing=dp(8))
+        play = Factory.FlatButton(text="■ Parar" if self._is_playing(t) else "▶ Escuchar", font_name="DejaVuSans", font_size="14sp")
+        play.bind(on_release=lambda *_: self.preview(t))
+        dl = Factory.RecButton(text="Descargada" if have else "Descargar", font_size="14sp")
+        if not have:
+            dl.bind(on_release=lambda *_: self.download(t, dl))
+        row.add_widget(play); row.add_widget(dl)
+        box.add_widget(row)
+        return box
+
+    # escuchar antes de bajar
+    _preview = None
+    _preview_id = None
+
+    def _is_playing(self, t):
+        return self._preview is not None and self._preview_id == t["id"]
+
+    def stop_preview(self):
+        if self._preview:
+            self._preview.stop()
+        self._preview, self._preview_id = None, None
+
+    def preview(self, t):
+        was = self._is_playing(t)
+        self.stop_preview()
+        if not was:
+            snd = SoundLoader.load(t["stream"])
+            if not snd:
+                self.status.text = "No se pudo reproducir (en el PC no hay streaming; en el teléfono sí)"
+            else:
+                snd.play()
+                self._preview, self._preview_id = snd, t["id"]
+        self.fill()
+
+    def download(self, t, btn):
+        app = App.get_running_app()
+        btn.text = "Bajando… 0%"
+
+        def done(path, err):
+            if err:
+                btn.text = "Reintentar"
+                self.status.text = f"No se pudo descargar: {err}"
+                return
+            btn.text = "Descargada"
+            self.status.text = "Lista: ya aparece en Freestyle y al elegir base de una canción"
+        discover.download(t, beats.user_dir(app.data_dir), done,
+                          progress=lambda p: setattr(btn, "text", f"Bajando… {int(p * 100)}%"))
+
+    def leave(self):
+        self.stop_preview()
+        App.get_running_app().open_freestyle()
+
+
 class PrompterScreen(Screen):
     """Teleprompter: suena la base, la letra avanza una barra por compás y se graba la toma."""
     song_id = None
@@ -1019,12 +1187,15 @@ class CompasZeroApp(App):
         self.rhyme_kind = None  # tipo de rima activo (None = modo rimas apagado)
         self.sm = ScreenManager(transition=FadeTransition(duration=.35))
         for s in (IntroScreen(name="intro"), HomeScreen(name="home"), SongScreen(name="song"),
-                  FreestyleScreen(name="freestyle"), ReviewScreen(name="review"), PrompterScreen(name="prompter")):
+                  FreestyleScreen(name="freestyle"), ReviewScreen(name="review"), PrompterScreen(name="prompter"), DiscoverScreen(name="discover")):
             self.sm.add_widget(s)
         Window.bind(on_keyboard=self.on_back)
         return self.sm
 
     def on_back(self, window, key, *args):
+        if key == 27 and self.sm.current == "discover":
+            self.sm.current_screen.leave()
+            return True
         if key == 27 and self.sm.current == "prompter":
             self.sm.current_screen.leave()
             return True
@@ -1214,6 +1385,11 @@ class CompasZeroApp(App):
                     ("Elegir archivo", lambda: android_io.open_document("application/json", restore), True)])
 
         words = sorted(self.nb.personal_words())
+        body.add_widget(Label(text="Client ID de Jamendo (para Descubrir bases)", color=C.muted, font_size="13sp",
+                              size_hint_y=None, height=dp(20), halign="left", text_size=(Window.width * .8, None)))
+        jid = text_input(self.nb.get_setting("jamendo_client_id"), hint="pega aquí tu client_id", lyric=False)
+        jid.bind(text=lambda w, v: self.nb.set_setting("jamendo_client_id", v.strip()))
+        body.add_widget(jid)
         for text, cb in [("Guardar copia de seguridad (Drive, Descargas…)", export),
                          ("Restaurar copia de seguridad", ask_restore)]:
             b = Factory.FlatButton(text=text, size_hint_y=None, height=dp(44), halign="left")

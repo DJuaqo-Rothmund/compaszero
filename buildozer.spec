@@ -14,7 +14,7 @@ android.api = 35
 android.minapi = 24
 android.archs = arm64-v8a, armeabi-v7a
 android.allow_backup = True
-android.permissions = RECORD_AUDIO, READ_MEDIA_AUDIO, READ_EXTERNAL_STORAGE
+android.permissions = INTERNET, RECORD_AUDIO, READ_MEDIA_AUDIO, READ_EXTERNAL_STORAGE
 # Android 11+: declarar que usamos el servicio de reconocimiento de voz
 android.extra_manifest_xml = ./android/extra_manifest.xml
 

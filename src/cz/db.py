@@ -112,6 +112,7 @@ class Notebook:
                 song_id INTEGER NOT NULL REFERENCES song(id) ON DELETE CASCADE,
                 created_at REAL NOT NULL, content TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS word (word TEXT PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS setting (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         """)
         self.conn.commit()
 
@@ -292,6 +293,15 @@ class Notebook:
                 self.conn.execute("INSERT INTO bar (song_id, section, text, created_at) VALUES (?, ?, ?, ?)",
                                   (v.song_id, section, text, time.time() + i * 1e-3))
             self._touch(v.song_id)
+
+    # ajustes
+    def get_setting(self, key: str, default: str = "") -> str:
+        r = self.conn.execute("SELECT value FROM setting WHERE key = ?", (key,)).fetchone()
+        return r[0] if r else default
+
+    def set_setting(self, key: str, value: str):
+        with self.conn:
+            self.conn.execute("INSERT OR REPLACE INTO setting VALUES (?, ?)", (key, value))
 
     # diccionario personal
     def personal_words(self) -> set[str]:

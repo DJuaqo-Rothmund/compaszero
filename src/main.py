@@ -30,7 +30,7 @@ from cz import inspiration, recorder, android_io
 from cz.db import STATUSES
 import re
 from cz.rhymes import TYPES, RhymeIndex, last_word
-from cz.theme import C, MONO, icon
+from cz.theme import C, MONO, icon, icon_raw, THEMES, apply_theme
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 INTRO_SECONDS = 6.0
@@ -250,7 +250,7 @@ def chips(selected, on_pick) -> StackLayout:
 
 def brand_title():
     """Logo grafiti «Compás Zero»."""
-    return Image(source=os.path.join(HERE, "assets", "wordmark.png"), fit_mode="contain",
+    return Image(source=os.path.join(HERE, "assets", "wordmark_l.png" if C.light else "wordmark.png"), fit_mode="contain",
                  size_hint=(None, None), size=(dp(120), dp(52)), pos_hint={"center_y": .5})
 
 
@@ -465,7 +465,7 @@ class HomeScreen(Screen):
             else:
                 col.add_widget(scroll_list(cards, spacing=dp(10)))
             layer.add_widget(col)
-            fab = Factory.RoundIcon(source=icon("plus"), size_hint=(None, None), size=(dp(60), dp(60)),
+            fab = Factory.RoundIcon(source=icon_raw("plus"), size_hint=(None, None), size=(dp(60), dp(60)),
                                     pos_hint={"right": .94, "y": .03})
             fab.bind(on_release=lambda *_: app.new_song())
             layer.add_widget(fab)
@@ -945,7 +945,7 @@ class DiscoverScreen(Screen):
         self.q = Factory.LyricInput(text=self.query, hint_text="Buscar (opcional): oscuro, piano, 90s…", font_name="Roboto",
                                     multiline=False)
         self.q.bind(on_text_validate=lambda *_: self.new_search())
-        go = Factory.RoundIcon(source=icon("buscar"), size_hint=(None, None), size=(dp(44), dp(44)), pos_hint={"center_y": .5})
+        go = Factory.RoundIcon(source=icon_raw("buscar"), size_hint=(None, None), size=(dp(44), dp(44)), pos_hint={"center_y": .5})
         go.bind(on_release=lambda *_: self.new_search())
         bar.add_widget(self.q); bar.add_widget(go)
         root.add_widget(bar)
@@ -1223,6 +1223,8 @@ class CompasZeroApp(App):
         self.recorder = recorder.Recorder()
         self._take_sound = None
         self.rhyme_kind = None  # tipo de rima activo (None = modo rimas apagado)
+        apply_theme(os.getenv("CZ_THEME") or self.nb.get_setting("theme", "Negro estudio"))
+        Window.clearcolor = C.ink
         self.sm = ScreenManager(transition=NoTransition())
         # Android 15 dibuja la app detrás de la barra de estado y la de navegación:
         # dejamos ese espacio libre para que no tapen los botones de arriba y abajo.
@@ -1238,7 +1240,30 @@ class CompasZeroApp(App):
             self.sm.add_widget(s)
         Window.bind(on_keyboard=self.on_back)
         frame.add_widget(self.sm)
+        self.frame = frame
+        self._frame_bg = bg
         return frame
+
+    def set_theme(self, name):
+        """Cambia el tema al instante reconstruyendo las pantallas."""
+        self.nb.set_setting("theme", name)
+        apply_theme(name)
+        Window.clearcolor = C.ink
+        self.frame.canvas.before.clear()
+        with self.frame.canvas.before:
+            from kivy.graphics import Color, Rectangle
+            Color(*C.ink)
+            self._frame_bg = Rectangle(pos=self.frame.pos, size=self.frame.size)
+        self.frame.bind(pos=lambda w, p: setattr(self._frame_bg, "pos", p),
+                        size=lambda w, sz: setattr(self._frame_bg, "size", sz))
+        self.frame.remove_widget(self.sm)
+        self.sm = ScreenManager(transition=NoTransition())
+        for s in (IntroScreen(name="intro"), HomeScreen(name="home"), SongScreen(name="song"),
+                  FreestyleScreen(name="freestyle"), ReviewScreen(name="review"), PrompterScreen(name="prompter"),
+                  DiscoverScreen(name="discover")):
+            self.sm.add_widget(s)
+        self.sm.current = "home"
+        self.frame.add_widget(self.sm)
 
     def on_back(self, window, key, *args):
         if key == 27 and self.sm.current == "discover":
@@ -1433,6 +1458,15 @@ class CompasZeroApp(App):
                     ("Elegir archivo", lambda: android_io.open_document("application/json", restore), True)])
 
         words = sorted(self.nb.personal_words())
+        body.add_widget(Label(text="Tema de colores", color=C.muted, font_size="13sp",
+                              size_hint_y=None, height=dp(20), halign="left", text_size=(Window.width * .8, None)))
+        trow = StackLayout(size_hint_y=None, spacing=dp(6))
+        trow.bind(minimum_height=trow.setter("height"))
+        for tname in THEMES:
+            c = Factory.Chip(text=tname, group="theme", state="down" if tname == C.name else "normal")
+            c.bind(on_release=lambda w, tname=tname: (holder["mv"].dismiss(), self.set_theme(tname)))
+            trow.add_widget(c)
+        body.add_widget(trow)
         body.add_widget(Label(text="Client ID de Jamendo (para Descubrir bases)", color=C.muted, font_size="13sp",
                               size_hint_y=None, height=dp(20), halign="left", text_size=(Window.width * .8, None)))
         jid = text_input(self.nb.get_setting("jamendo_client_id"), hint="pega aquí tu client_id", lyric=False)

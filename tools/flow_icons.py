@@ -7,7 +7,9 @@ from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC, OUT = ROOT / "docs/brand/icons/flow", ROOT / "src/assets/icons"
-VARIANTS = {"": ((245, 245, 245), (229, 25, 75)), "_off": ((138, 138, 138), (122, 18, 41))}
+VARIANTS = {"": ((245, 245, 245), (229, 25, 75)), "_off": ((138, 138, 138), (122, 18, 41)),
+            # temas claros: trazos negros, el rojo se mantiene
+            "_l": ((17, 17, 17), (229, 25, 75)), "_l_off": ((150, 150, 150), (214, 140, 160))}
 
 
 def convert(path, name, size=144, inset=0):
@@ -47,3 +49,9 @@ ImageDraw.Draw(mask).ellipse((40, 40, w - 40, h - 40), fill=255)
 black = Image.new("RGB", im.size, (0, 0, 0))
 Image.composite(im, black, mask).resize((1024, 1024), Image.LANCZOS).save(ROOT / "src/assets/icon.png")
 print("ok")
+
+# logo grafiti en negro para temas claros
+wm = Image.open(ROOT / "src/assets/wordmark.png")
+a = wm.getchannel("A")
+dark = Image.new("RGBA", wm.size, (17, 17, 17, 0)); dark.putalpha(a)
+dark.save(ROOT / "src/assets/wordmark_l.png")

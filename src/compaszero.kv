@@ -1,6 +1,7 @@
 #:import C cz.theme.C
 #:import MONO cz.theme.MONO
 #:import icon cz.theme.icon
+#:import icon_raw cz.theme.icon_raw
 
 <Label>:
     color: C.chalk
@@ -99,7 +100,7 @@
     font_size: "15sp"
 
 <RecButton@ButtonBehavior+Label>:
-    color: C.chalk
+    color: C.on_rec
     bold: True
     canvas.before:
         Color:
@@ -114,6 +115,7 @@
     size: self.texture_size[0] + dp(28), dp(34)
     font_size: "13sp"
     bold: self.state == "down"
+    color: C.on_rec if self.state == "down" else C.chalk
     allow_no_selection: False
     canvas.before:
         Color:
@@ -213,7 +215,7 @@
             width: dp(40)
             on_release: root.dictate()
         RoundIcon:
-            source: icon("enviar")
+            source: icon_raw("enviar")
             size_hint: None, None
             size: dp(50), dp(50)
             pos_hint: {"center_y": .5}

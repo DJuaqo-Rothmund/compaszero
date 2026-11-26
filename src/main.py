@@ -27,7 +27,7 @@ except ImportError:  # en el PC sin la extensión
     SpeechToText = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-INTRO_SECONDS = 8.4
+INTRO_SECONDS = 9.2
 RHYME_COLORS = ["#E5194B", "#F5A623", "#4FC3F7", "#9CCC65", "#BA68C8", "#FFD54F", "#4DB6AC", "#F48FB1"]
 W = ft.Colors.with_opacity
 

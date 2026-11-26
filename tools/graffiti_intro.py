@@ -20,6 +20,7 @@ from skimage.graph import MCP_Geometric
 from skimage.morphology import skeletonize
 
 FPS = 25
+HOLD = 2.6  # segundos finales con el texto quieto y la luz REC latiendo
 REC = np.array([229, 25, 75], float)
 REC_OFF = np.array([61, 7, 18], float)
 RNG = np.random.default_rng(11)
@@ -181,7 +182,8 @@ def render(folder, style, out, scale=1.0):
         strokes.append(s)
         t += s.dur * .8
     t_tag = t + .25
-    end = t_tag + 1.4
+    # al terminar de escribir: solo la luz REC enciende y apaga (~2 s más) mientras carga la app
+    end = t_tag + 0.6 + HOLD
     over = np.zeros((H, W))  # salpicadura acumulada alrededor de los trazos
     frames = []
     n_frames = int(end * FPS)
@@ -244,7 +246,6 @@ def render(folder, style, out, scale=1.0):
         if scale != 1:
             img = img.resize((int(W * scale), int(H * scale)), Image.LANCZOS)
         frames.append(img)
-    frames += [frames[-1]] * int(.8 * FPS)
     if out.endswith(".gif"):
         q = [fr.quantize(96, dither=Image.Dither.NONE) for fr in frames]
         q[0].save(out, save_all=True, append_images=q[1:], duration=1000 // FPS, loop=0, optimize=True)

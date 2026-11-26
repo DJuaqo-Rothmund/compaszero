@@ -16,6 +16,8 @@ org = "com.compaszero"
 product = "CompásZero"
 company = "CompásZero"
 copyright = "CompásZero"
+# número de versión interno: debe ser mayor que el de las versiones anteriores (Kivy usaba 1024100)
+build_number = 2000090
 # micrófono: grabar tomas, notas de voz, dictado y freestyle
 permissions = ["microphone"]
 

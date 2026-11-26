@@ -70,3 +70,13 @@ def count_line_sung(line: str) -> int:
         if a[-1] in _VOWEL_END and _starts_with_vowel(b):
             total -= 1
     return total
+
+
+def sinalefas(line: str) -> list[tuple[str, bool]]:
+    """Palabras de la línea y si se unen por sinalefa con la siguiente: [("nace", False), ("la", True), ("idea", False)]."""
+    ws = words(line)
+    out = []
+    for i, w in enumerate(ws):
+        joins = i + 1 < len(ws) and w[-1] in _VOWEL_END and _starts_with_vowel(ws[i + 1])
+        out.append((w, joins))
+    return out

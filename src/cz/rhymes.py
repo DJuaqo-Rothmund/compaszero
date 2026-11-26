@@ -159,3 +159,17 @@ class RhymeIndex:
 def last_word(text: str) -> str:
     ws = [w for w in "".join(c if c.isalpha() else " " for c in text).split()]
     return ws[-1] if ws else ""
+
+
+STRESS_NAMES = {1: "aguda", 2: "llana", 3: "esdrújula"}
+
+
+def stress_info(word: str):
+    """Dónde cae el acento: (índice de la vocal tónica en la palabra en minúsculas, tipo, palabra).
+    tipo: aguda (última sílaba), llana (penúltima), esdrújula (antepenúltima) o sobresdrújula."""
+    a = analyze(word)
+    if a is None:
+        return None
+    k, mains, w = a
+    from_end = len(mains) - k
+    return mains[k], STRESS_NAMES.get(from_end, "sobresdrújula"), w

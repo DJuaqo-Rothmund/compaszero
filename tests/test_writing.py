@@ -20,3 +20,14 @@ def test_ortografia():
 
 def test_sinonimos():
     assert "senda" in Thesaurus().synonyms("camino")
+
+
+def test_acento_y_sinalefa():
+    from cz.rhymes import stress_info
+    from cz.syllables import sinalefas
+    assert stress_info("corazón")[1] == "aguda"
+    assert stress_info("camino")[1] == "llana"
+    assert stress_info("rápido")[1] == "esdrújula"
+    i, _, w = stress_info("camino")
+    assert w[i] == "i"
+    assert sinalefas("nace la idea") == [("nace", False), ("la", True), ("idea", False)]

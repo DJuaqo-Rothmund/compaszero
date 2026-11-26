@@ -13,13 +13,13 @@ import flet as ft
 import flet_audio as fa
 import flet_audio_recorder as far
 
-from cz import beats, discover, inspiration
+from cz import beats, discover, guide, inspiration
 from cz.db import SECTIONS, STATUSES, Notebook
 from cz.look import ACCENTS, FONTS, REC, TEXTURES, THEMES, Look
-from cz.rhymes import TYPES, RhymeIndex, last_word
+from cz.rhymes import TYPES, RhymeIndex, last_word, stress_info
 from cz.rhymes import keys as rhyme_keys
 from cz.spelling import Speller, Thesaurus
-from cz.syllables import count_line, count_line_sung, words
+from cz.syllables import count_line, count_line_sung, sinalefas, words
 
 try:
     from flet_speech import SpeechToText
@@ -101,6 +101,7 @@ class App:
         self.screen, self.tab = "intro", 0
         self.song_id = self.session_id = None
         self.section, self.rhyme_kind, self.query = "Verso", None, ""
+        self.lesson = None
         self.fs_beat, self.fs_words = None, False
         self.discover_state = {"style": "Boom bap", "source": "Openverse", "query": "", "publish": False,
                                "results": [], "page": 1, "status": ""}
@@ -250,7 +251,7 @@ class App:
         L = self.L
         settings = self.icon_btn("gear", lambda e: self.open_settings())
         top = self.header(actions=[settings])
-        top.content.controls.insert(0, ft.Container(width=46))
+        top.content.controls.insert(0, self.icon_btn("ideas_cuaderno", lambda e: self.go("guide"), tooltip="Aprende"))
         body = [self.songs_tab, self.ideas_tab, self.freestyle_tab][self.tab]()
         return ft.Column([top, ft.Container(body, expand=True), self.nav_bar()], spacing=0, expand=True)
 
@@ -509,8 +510,9 @@ class App:
             refresh()
 
         def kind_chips():
-            return [self.txt("Rimas", 12, L.muted)] + [self.chip(n, self.rhyme_kind == k, lambda e, k=k: pick_kind(k), small=True)
-                                                       for k, n in TYPES.items()]
+            return ([self.txt("Rimas", 12, L.muted)] +
+                    [self.chip(n, self.rhyme_kind == k, lambda e, k=k: pick_kind(k), small=True) for k, n in TYPES.items()] +
+                    [self.chip("¿?", False, lambda e: self.go("guide"), small=True)])
 
         def dictate(e):
             async def go():
@@ -1226,6 +1228,120 @@ class App:
         await self.p_stop()
         self.go("song")
 
+    # ================= aprende: rimas y métrica =================
+    def guide_view(self):
+        L = self.L
+        cards = [ft.Container(ft.Column([
+            self.marker("Aprende", 26),
+            self.txt("Tipos de rima, métrica y cómo escribir pensando en el beat. Cada lección trae ejemplos y algunas un "
+                     "laboratorio para practicar con tus propias palabras.", 13, L.muted)], spacing=4),
+            padding=ft.Padding.only(left=4, top=4, right=4, bottom=8))]
+        for i, les in enumerate(guide.LESSONS):
+            num = ft.Container(self.txt(str(i + 1), 15, L.on_accent, "PoppinsBold"), width=34, height=34, border_radius=34,
+                               bgcolor=L.accent, alignment=ft.Alignment.CENTER)
+            lab = ft.Container(self.txt("laboratorio", 10, L.accent, "PoppinsSemi"), border_radius=8, bgcolor=W(.14, L.accent),
+                               padding=ft.Padding.symmetric(vertical=2, horizontal=8), visible=bool(les["tool"]))
+            cards.append(self.card(ft.Row([num, ft.Column([self.txt(les["title"], 16, font="PoppinsSemi"),
+                                                           ft.Row([self.txt(les["subtitle"], 12, L.muted), lab], spacing=8)],
+                                                          spacing=2, expand=True)], spacing=14),
+                                   on_click=lambda e, i=i: self.go("lesson", lesson=i), padding=14))
+        return ft.Column([self.header("Rimas y métrica", back=lambda e: self.go("home")),
+                          ft.ListView(cards, spacing=10, padding=ft.Padding.only(left=16, top=4, right=16, bottom=20), expand=True)],
+                         spacing=0, expand=True)
+
+    def example_line(self, ex):
+        L = self.L
+        spans = [ft.TextSpan(t, ft.TextStyle(color=L.accent, weight=ft.FontWeight.BOLD) if hi else None)
+                 for t, hi in guide.parts(ex)]
+        return ft.Container(ft.Text(spans=spans, font_family="Mono", size=15, color=L.text),
+                            padding=ft.Padding.symmetric(vertical=10, horizontal=14), border_radius=14,
+                            bgcolor=W(.9, L.surface2), border=ft.Border.all(1, W(.6, L.line)))
+
+    def lesson_view(self):
+        L = self.L
+        i = self.lesson or 0
+        les = guide.LESSONS[i]
+        body = [self.marker(les["title"], 26), self.txt(les["subtitle"], 14, L.muted)]
+        body += [self.txt(p, 15, L.text) for p in les["body"]]
+        body.append(self.marker("Ejemplos", 18))
+        body += [self.example_line(ex) for ex in les["examples"]]
+        if les["tool"] == "rima":
+            body += [self.marker("Laboratorio", 18), self.rhyme_lab()]
+        elif les["tool"] == "metrica":
+            body += [self.marker("Laboratorio", 18), self.meter_lab()]
+        nav = []
+        if i > 0:
+            nav.append(self.button("Anterior", lambda e: self.go("lesson", lesson=i - 1), primary=False, expand=True, height=44))
+        if i + 1 < len(guide.LESSONS):
+            nav.append(self.button("Siguiente", lambda e: self.go("lesson", lesson=i + 1), expand=True, height=44))
+        body.append(ft.Container(ft.Row(nav, spacing=10), padding=ft.Padding.only(top=10)))
+        return ft.Column([self.header(f"Lección {i + 1} de {len(guide.LESSONS)}", back=lambda e: self.go("guide")),
+                          ft.ListView(body, spacing=12, padding=ft.Padding.only(left=20, top=4, right=20, bottom=24), expand=True)],
+                         spacing=0, expand=True)
+
+    def rhyme_lab(self):
+        """Escribe una palabra: muestra su tónica, tipo de acento y rimas de cada tipo."""
+        L = self.L
+        out = ft.Column(spacing=10)
+        f = self.field("Escribe una palabra", "camino")
+
+        def run(e=None):
+            w = last_word(f.value or "")
+            out.controls.clear()
+            info = stress_info(w) if w else None
+            if not info:
+                out.controls.append(self.txt("Escribe una palabra con vocales.", 13, L.muted))
+            else:
+                idx, kind, lw = info
+                out.controls.append(ft.Text(spans=[ft.TextSpan(lw[:idx]),
+                                                   ft.TextSpan(lw[idx], ft.TextStyle(color=L.accent, weight=ft.FontWeight.BOLD,
+                                                                                     size=26)),
+                                                   ft.TextSpan(lw[idx + 1:])], size=22, font_family="Mono", color=L.text))
+                out.controls.append(self.txt(f"Vocal tónica resaltada · palabra {kind} · rima desde «{lw[idx:]}»", 12, L.muted))
+                for k, name in TYPES.items():
+                    found = self.rhymes.find(w, k, 14)
+                    out.controls.append(ft.Column([
+                        self.txt(name, 13, L.accent, "PoppinsSemi"),
+                        ft.Row([ft.Container(self.txt(x, 13, L.text, "Mono"), padding=ft.Padding.symmetric(vertical=4, horizontal=10),
+                                             border_radius=10, bgcolor=W(.9, L.surface2)) for x in found] or
+                               [self.txt("sin resultados", 12, L.muted)], wrap=True, spacing=6, run_spacing=6)], spacing=4))
+            safe_update(out)
+        f.on_change = run
+        run()
+        return self.card(ft.Column([f, out], spacing=12), padding=14)
+
+    def meter_lab(self):
+        """Escribe una barra: sílabas, sinalefas, acento final y cuánto ocupa en el compás."""
+        L = self.L
+        out = ft.Column(spacing=8)
+        f = self.field("Escribe una barra", "Antes del beat, nace la idea", mono=True)
+
+        def run(e=None):
+            t = f.value or ""
+            out.controls.clear()
+            if t.strip():
+                spans = []
+                for w, joins in sinalefas(t):
+                    spans.append(ft.TextSpan(w))
+                    spans.append(ft.TextSpan("_" if joins else " ", ft.TextStyle(color=L.accent, weight=ft.FontWeight.BOLD)))
+                out.controls.append(ft.Text(spans=spans, font_family="Mono", size=17, color=L.text))
+                n, sung = count_line(t), count_line_sung(t)
+                lw = last_word(t)
+                info = stress_info(lw) if lw else None
+                stats = [("Sílabas", str(n)), ("Al rapear", str(sung)), ("Final", info[1] if info else "—")]
+                out.controls.append(ft.Row([ft.Container(ft.Column([self.txt(v, 20, L.accent, "PoppinsBold"),
+                                                                     self.txt(k, 11, L.muted)], spacing=0,
+                                                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                                                         expand=True, padding=10, border_radius=14, bgcolor=W(.9, L.surface2))
+                                            for k, v in stats], spacing=8))
+                fit = ("cabe cómoda en corcheas (≤ 8)" if sung <= 8 else
+                       "cabe en semicorcheas (≤ 16)" if sung <= 16 else "más de 16: necesitas doble tiempo o dividirla en 2 barras")
+                out.controls.append(self.txt(f"_ = sinalefa · En un compás de 4/4: {fit}.", 12, L.muted))
+            safe_update(out)
+        f.on_change = run
+        run()
+        return self.card(ft.Column([f, out], spacing=12), padding=14)
+
     # ================= ajustes =================
     def open_settings(self):
         L = self.L
@@ -1289,7 +1405,9 @@ async def main(page: ft.Page):
     page.on_view_pop = None
 
     def back(e):
-        if app.screen in ("song", "freestyle", "review", "discover", "prompter"):
+        if app.screen == "lesson":
+            return app.go("guide")
+        if app.screen in ("song", "freestyle", "review", "discover", "prompter", "guide"):
             app.go("home" if app.screen != "prompter" else "song")
     page.on_keyboard_event = lambda e: back(e) if e.key == "Escape" else None
     demo = os.getenv("CZ_DEMO")
@@ -1311,6 +1429,8 @@ async def main(page: ft.Page):
         app.session_id = nb.sessions()[0].id
         screen, _, tab = demo.partition(":")
         app.screen, app.tab = screen, int(tab or 0)
+        if screen == "lesson":
+            app.lesson, app.tab = int(tab or 0), 0
         if screen == "song":
             app.rhyme_kind = "consonante"
     app.render()

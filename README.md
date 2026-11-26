@@ -47,11 +47,12 @@ Cuaderno de rimas para Android: escribe frases sueltas, recibe sugerencias de ri
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | Python 3 |
-| UI | Kivy 2.3 (`src/main.py` + `src/compaszero.kv`) |
-| Empaquetado Android | Buildozer / python-for-android (`buildozer.spec`) |
+| UI | Flet 1.1 (Flutter): `src/main.py`, apariencia en `src/cz/look.py` |
+| Audio / grabación | `flet-audio`, `flet-audio-recorder` |
+| Voz (dictado y freestyle) | extensión propia `extensions/flet-speech` (plugin `speech_to_text` de Flutter) |
 | Datos locales | SQLite (`src/cz/db.py`) |
-| Sílabas / rimas | Motor propio en español (`src/cz/syllables.py`) |
-| Audio (próximo) | `kivy.core.audio` + `android.media` vía pyjnius |
+| Sílabas / rimas / ortografía | Motor propio en español (`src/cz/`) |
+| Fuentes | Poppins, JetBrains Mono, Permanent Marker (OFL / Apache) |
 
 ## Identidad visual
 
@@ -114,16 +115,14 @@ El símbolo es un **0** atravesado por una línea vertical (barra de compás / c
 
 ### Probar en el PC
 ```bash
-pip install "kivy[base]==2.3.1" pytest
-python src/main.py
+pip install "flet[all]==1.1.3" flet-audio==1.1.3 flet-audio-recorder==1.1.3 -e extensions/flet-speech pytest
+CZ_FAKE_SPEECH=1 flet run src/main.py   # CZ_FAKE_SPEECH simula el dictado
 python -m pytest tests
-CZ_FAKE_SPEECH=1 python src/main.py   # simula el dictado del freestyle en el PC
 ```
 
 ### Generar el APK
 ```bash
-pip install buildozer
-buildozer android debug     # APK en bin/
+flet build apk      # APKs por procesador en build/apk/
 ```
 
 ## Hoja de ruta

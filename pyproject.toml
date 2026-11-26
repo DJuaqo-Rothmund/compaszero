@@ -30,6 +30,8 @@ color = "#000000"
 dark_color = "#000000"
 
 [tool.flet.android]
+# un APK por tipo de procesador: el de tu teléfono pesa mucho menos
+split_per_abi = true
 # Android 11+: poder usar el servicio de reconocimiento de voz del sistema
 [[tool.flet.android.queries.intent]]
 action = "android.speech.RecognitionService"

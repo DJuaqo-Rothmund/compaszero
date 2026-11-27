@@ -650,7 +650,7 @@ class App:
                 self.render()
                 self.snack("Idea movida a la canción")
             return [self.marker("Mover a canción", 15), row] + [
-                ft.TextButton(content=self.txt(f"→  {s.title}", 14, L.text), on_click=lambda e, sid=s.id: move(sid)) for s in songs]
+                ft.TextButton(content=self.txt(f"›  {s.title}", 14, L.text), on_click=lambda e, sid=s.id: move(sid)) for s in songs]
         self.bar_sheet(bar, "Idea", extra, on_save=lambda v: (self.nb.update_bar(bar.id, v), self.render()),
                        on_delete=lambda: (self.nb.delete_bar(bar.id), self.render()))
 

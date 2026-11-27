@@ -116,6 +116,10 @@ class App:
         # servicios nativos (se guardan referencias para que no se liberen)
         self.beat_audio = fa.Audio(release_mode=fa.ReleaseMode.LOOP, volume=.9)
         self.take_audio = fa.Audio(release_mode=fa.ReleaseMode.STOP)
+        # radio de inspiración: suena en cualquier pantalla
+        self.radio_audio = fa.Audio(release_mode=fa.ReleaseMode.STOP, volume=.85,
+                                    on_state_change=self.radio_state)
+        self.radio = {"queue": [], "i": 0, "playing": False, "paused": False}
         self.recorder = far.AudioRecorder()
         self.files = ft.FilePicker()
         self.share = ft.Share()
@@ -231,7 +235,14 @@ class App:
             body = self.intro_view()
         else:
             body = getattr(self, f"{self.screen}_view")()
-        p.controls.append(ft.Stack(self.background() + [ft.SafeArea(body, expand=True)], expand=True))
+        layers = self.background()
+        if self.screen != "intro":
+            body = ft.Column([self.radio_bar(), ft.Container(body, expand=True)], spacing=0, expand=True)
+            layers.append(ft.SafeArea(body, expand=True))
+            layers.append(self.radio_button())
+        else:
+            layers.append(ft.SafeArea(body, expand=True))
+        p.controls.append(ft.Stack(layers, expand=True))
         p.update()
 
     def go(self, screen, **kw):
@@ -714,6 +725,7 @@ class App:
             ft.Row(self.metro, spacing=5)], vertical_alignment=ft.CrossAxisAlignment.CENTER), padding=10)
 
     async def play_beat(self, path, bpm, on_beat=None):
+        await self.radio_pause()
         await self.stop_beat()
         self.beat_audio.src = path
         self.beat_audio.update()
@@ -879,6 +891,7 @@ class App:
         return await self.recorder.start_recording(output_path=path, configuration=cfg)
 
     async def toggle_voice_note(self):
+        await self.radio_pause()
         if self.recording_note:
             path = await self.recorder.stop_recording()
             dur = time.monotonic() - self._note_t0
@@ -945,6 +958,7 @@ class App:
             ft.Container(height=14)], spacing=8, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
     async def fs_toggle(self):
+        await self.radio_pause()
         if self.fs_running:
             return await self.fs_stop()
         if not self.fs_beat:
@@ -1178,6 +1192,7 @@ class App:
                          spacing=8, expand=True, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
     async def p_toggle(self):
+        await self.radio_pause()
         if self.p_running:
             return await self.p_stop()
         song = self.nb.song(self.song_id)
@@ -1236,6 +1251,139 @@ class App:
     async def p_leave(self):
         await self.p_stop()
         self.go("song")
+
+    # ================= radio de inspiración =================
+    def radio_tracks(self):
+        """Bases para escuchar: incluidas, descargadas e importadas, con su crédito si lo tienen."""
+        out = []
+        for name, path in beats.list_beats(self.data_dir):
+            c = discover.credits_for(path)
+            out.append({"title": c["title"] if c else name, "artist": c["artist"] if c else "CompásZero", "path": path})
+        return out
+
+    def radio_state(self, e):
+        # al terminar una pista pasa sola a la siguiente
+        if getattr(e.state, "value", str(e.state)) in ("completed", "AudioState.COMPLETED") and self.radio["playing"]:
+            self.page.run_task(self.radio_next)
+
+    async def radio_play(self, i=None, shuffle=False):
+        import random
+        await self.stop_beat()
+        if shuffle or not self.radio["queue"]:
+            q = self.radio_tracks()
+            random.shuffle(q)
+            self.radio["queue"], self.radio["i"] = q, 0
+        if i is not None:
+            self.radio["i"] = i
+        if not self.radio["queue"]:
+            return self.snack("No hay bases: descarga o importa algunas")
+        t = self.radio["queue"][self.radio["i"] % len(self.radio["queue"])]
+        self.radio_audio.src = t["path"]
+        self.radio_audio.update()
+        await self.radio_audio.play()
+        self.radio.update(playing=True, paused=False)
+        self.render()
+
+    async def radio_next(self):
+        if self.radio["queue"]:
+            self.radio["i"] = (self.radio["i"] + 1) % len(self.radio["queue"])
+            await self.radio_play()
+
+    async def radio_toggle(self):
+        if not self.radio["playing"]:
+            return await self.radio_play(shuffle=True)
+        if self.radio["paused"]:
+            await self.radio_audio.resume()
+            self.radio["paused"] = False
+        else:
+            await self.radio_audio.pause()
+            self.radio["paused"] = True
+        self.render()
+
+    async def radio_pause(self):
+        if self.radio["playing"] and not self.radio["paused"]:
+            await self.radio_audio.pause()
+            self.radio["paused"] = True
+
+    async def radio_close(self):
+        await self.radio_audio.pause()
+        self.radio.update(playing=False, paused=False)
+        self.render()
+
+    def radio_bar(self):
+        """Mini reproductor arriba de cualquier pantalla mientras suena el radio."""
+        L = self.L
+        r = self.radio
+        if not r["playing"] or not r["queue"]:
+            return ft.Container(height=0)
+        t = r["queue"][r["i"] % len(r["queue"])]
+        return ft.Container(ft.Row([
+            ft.Image(src=L.icon("descubrir"), width=22, height=22),
+            ft.Column([self.txt(t["title"], 13, font="PoppinsSemi", max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                       self.txt(t["artist"], 10, L.muted, max_lines=1)], spacing=0, expand=True),
+            ft.Container(ft.Image(src=L.icon("play" if r["paused"] else "stop"), width=24, height=24), padding=6,
+                         on_click=lambda e: self.page.run_task(self.radio_toggle), ink=True, border_radius=20),
+            ft.Container(ft.Image(src=L.icon("enviar"), width=22, height=22), padding=6,
+                         on_click=lambda e: self.page.run_task(self.radio_next), ink=True, border_radius=20),
+            ft.Container(self.txt("✕", 16, L.muted), padding=6, on_click=lambda e: self.page.run_task(self.radio_close),
+                         ink=True, border_radius=20)], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            margin=ft.Margin.only(left=12, right=12, top=6), padding=ft.Padding.symmetric(vertical=6, horizontal=12),
+            border_radius=20, bgcolor=W(.95, L.surface2), border=ft.Border.all(1, W(.5, L.accent)),
+            on_click=lambda e: self.radio_sheet())
+
+    def radio_button(self):
+        """Botón flotante (vinilo) para abrir el radio desde cualquier pantalla."""
+        L = self.L
+        if self.screen in ("freestyle", "prompter"):
+            return ft.Container(width=0, height=0)
+        spinning = self.radio["playing"] and not self.radio["paused"]
+        return ft.Container(
+            ft.Image(src=L.icon("descubrir"), width=26, height=26), width=46, height=46, border_radius=46,
+            bgcolor=W(.92, L.surface2), border=ft.Border.all(1.5, L.accent if spinning else L.line),
+            alignment=ft.Alignment.CENTER, on_click=lambda e: self.radio_sheet(), ink=True, left=12, bottom=290,
+            shadow=ft.BoxShadow(blur_radius=14, spread_radius=-4, color=W(.5, "#000000"), offset=ft.Offset(0, 4)),
+            tooltip="Escuchar bases")
+
+    def radio_sheet(self):
+        L = self.L
+        tracks = self.radio_tracks()
+
+        def play(i):
+            async def go():
+                self.page.pop_dialog()
+                self.radio["queue"] = tracks
+                await self.radio_play(i)
+            self.page.run_task(go)
+
+        def shuffle(e):
+            async def go():
+                self.page.pop_dialog()
+                await self.radio_play(shuffle=True)
+            self.page.run_task(go)
+
+        async def hhgroups(e):
+            await ft.UrlLauncher().launch_url("https://www.hhgroups.com/")
+        rows = []
+        for i, t in enumerate(tracks):
+            cur = self.radio["playing"] and self.radio["queue"] and self.radio["queue"][self.radio["i"] % len(self.radio["queue"])]["path"] == t["path"]
+            rows.append(ft.Container(ft.Row([
+                ft.Image(src=L.icon("play"), width=24, height=24),
+                ft.Column([self.txt(t["title"], 14, L.accent if cur else L.text, "PoppinsSemi", max_lines=1,
+                                    overflow=ft.TextOverflow.ELLIPSIS), self.txt(t["artist"], 11, L.muted)],
+                          spacing=0, expand=True)], spacing=12), padding=ft.Padding.symmetric(vertical=8, horizontal=8),
+                border_radius=12, ink=True, on_click=lambda e, i=i: play(i)))
+        self.sheet(ft.Column([
+            ft.Row([ft.Image(src=L.icon("descubrir"), width=28, height=28), self.txt("Escuchar para inspirarte", 19, font="PoppinsSemi")],
+                   spacing=10),
+            self.txt("Suena mientras escribes en cualquier pantalla. Se pausa sola al grabar o al usar la base de una canción.",
+                     12, L.muted),
+            ft.Row([self.button("Aleatorio", shuffle, expand=True, height=44, icon="play"),
+                    self.button("Buscar más", lambda e: (self.page.pop_dialog(), self.go("discover")), primary=False,
+                                expand=True, height=44)], spacing=8),
+            *rows,
+            ft.TextButton(content=self.txt("Abrir HHGroups en el navegador", 13, L.accent), on_click=hhgroups),
+            self.txt("Lo que descargues de otros sitios lo agregas en Freestyle, con el botón Importar.", 11, L.muted)],
+            spacing=8, tight=True))
 
     # ================= aprende: rimas y métrica =================
     def guide_view(self):
